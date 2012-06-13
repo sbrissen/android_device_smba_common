@@ -31,8 +31,9 @@
 #include "nusensors.h"
 #include "AccelerationSensor.h"
 #include "LightSensor.h"
+#ifdef MAGNETIC_SENSOR
 #include "MagneticSensor.h"
-
+#endif
 /*****************************************************************************/
 
 struct sensors_poll_context_t {
@@ -48,7 +49,9 @@ private:
     enum {
 	acceleration    = 0,
 	light           = 1,
+#ifdef MAGNETIC_SENSOR
 	magnetic		= 2,
+#endif
         numSensorDrivers,
         numFds,
     };
@@ -63,8 +66,10 @@ private:
         switch (handle) {
             case ID_A:
                 return acceleration;
+#ifdef MAGNETIC_SENSOR
             case ID_M:
                 return magnetic;
+#endif
             case ID_L:
                 return light;
         }
@@ -86,10 +91,12 @@ sensors_poll_context_t::sensors_poll_context_t()
     mPollFds[light].events = POLLIN;
     mPollFds[light].revents = 0;
 
+#ifdef MAGNETIC_SENSOR
     mSensors[magnetic] = new MagneticSensor();
     mPollFds[magnetic].fd = mSensors[magnetic]->getFd();
     mPollFds[magnetic].events = POLLIN;
     mPollFds[magnetic].revents = 0;
+#endif
 
     int wakeFds[2];
     int result = pipe(wakeFds);

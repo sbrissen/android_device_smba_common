@@ -28,15 +28,20 @@ LOCAL_SRC_FILES := 						\
 				InputEventReader.cpp		\
 				SensorBase.cpp			\
 				AccelerationSensor.cpp		\
-				LightSensor.cpp			\
-				MagneticSensor.cpp
+				LightSensor.cpp
 
+
+ifeq ($(BOARD_HAVE_MAGNETIC_SENSOR),true)
+LOCAL_SRC_FILES += 						\
+				MagneticSensor.cpp
+LOCAL_CFLAGS += -DMAGNETIC_SENSOR
+endif
 
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 
-LOCAL_MODULE := sensors.harmony
+LOCAL_MODULE := sensors.tegra
 
 include $(BUILD_SHARED_LIBRARY)

@@ -35,10 +35,12 @@ static const struct sensor_t sSensorList[] = {
                 "ISL",
                 1, SENSORS_HANDLE_BASE+ID_L,
                 SENSOR_TYPE_LIGHT, 1000.0f, 0.05f, 0.003f, 0,  { } },
+#ifdef MAGNETIC_SENSOR
 	{ "MMC31xx 3-axis Magnetic field sensor",
                 "Memsic",
                 1, SENSORS_HANDLE_BASE+ID_M,
                 SENSOR_TYPE_MAGNETIC_FIELD, 800.0f, 100.0/512.0 , 6.8f, 30000, { } }
+#endif
 };
 
 static int open_sensors(const struct hw_module_t* module, const char* name,
