@@ -322,7 +322,7 @@ static char *buildStkMenu(struct stkmenu *cmenu, int n)
     return resp;
 }
 
-void getCachedStkMenu()
+void getCachedStkMenu(void)
 {
     int id;
     int err;
