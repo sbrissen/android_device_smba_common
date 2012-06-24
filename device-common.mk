@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-DEVICE_PACKAGE_OVERLAYS += device/malata/smba-common/overlay
+DEVICE_PACKAGE_OVERLAYS += device/malata/smba_common/overlay
 
 $(call inherit-product, frameworks/base/build/tablet-dalvik-heap.mk)
 
@@ -65,29 +65,29 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 
 # Media
 PRODUCT_COPY_FILES += \
-    device/malata/smba-common/prebuilt/media_profiles.xml:system/etc/media_profiles.xml
+    device/malata/smba_common/prebuilt/media_profiles.xml:system/etc/media_profiles.xml
 
 # Harmony Configs
 PRODUCT_COPY_FILES += \
-    device/malata/smba-common/prebuilt/init.harmony.rc:root/init.harmony.rc \
-    device/malata/smba-common/prebuilt/init.harmony.usb.rc:root/init.harmony.usb.rc \
-    device/malata/smba-common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
-    device/malata/smba-common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
-    device/malata/smba-common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt \
-    device/malata/smba-common/prebuilt/sysctl.conf:system/etc/sysctl.conf
+    device/malata/smba_common/prebuilt/init.harmony.rc:root/init.harmony.rc \
+    device/malata/smba_common/prebuilt/init.harmony.usb.rc:root/init.harmony.usb.rc \
+    device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
+    device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
+    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt \
+    device/malata/smba_common/prebuilt/sysctl.conf:system/etc/sysctl.conf
 
 # Bluetooth
 PRODUCT_COPY_FILES += \
     system/bluetooth/data/main.nonsmartphone.conf:system/etc/bluetooth/main.conf \
-    device/malata/smba-common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd
+    device/malata/smba_common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd
 
 # Touchscreen
 PRODUCT_COPY_FILES += \
-    device/malata/smba-common/prebuilt/at168_touch.idc:system/usr/idc/at168_touch.idc 
+    device/malata/smba_common/prebuilt/at168_touch.idc:system/usr/idc/at168_touch.idc 
 
 # Generic
 PRODUCT_COPY_FILES += \
-   device/malata/smba-common/prebuilt/vold.fstab:system/etc/vold.fstab
+   device/malata/smba_common/prebuilt/vold.fstab:system/etc/vold.fstab
 
 PRODUCT_PROPERTY_OVERRIDES += \
     BUILD_UTC_DATE=0 \

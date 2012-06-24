@@ -18,9 +18,9 @@
 # by BoardConfigVendor.mk
 USE_CAMERA_STUB := false
 
-TARGET_PREBUILT_KERNEL := device/malata/smba-common/prebuilt/kernel
+TARGET_PREBUILT_KERNEL := device/malata/smba_common/prebuilt/kernel
 
-TARGET_SPECIFIC_HEADER_PATH := device/malata/smba-common/include
+TARGET_SPECIFIC_HEADER_PATH := device/malata/smba_common/include
 
 TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
@@ -49,7 +49,7 @@ BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
 
 #graphics
-BOARD_EGL_CFG := device/malata/smba-common/prebuilt/egl.cfg
+BOARD_EGL_CFG := device/malata/smba_common/prebuilt/egl.cfg
 BOARD_USES_OVERLAY := true
 USE_OPENGL_RENDERER := true
 
