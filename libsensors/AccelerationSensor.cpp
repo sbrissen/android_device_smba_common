@@ -76,7 +76,7 @@ int AccelerationSensor::enable(int32_t, int en)
         }
         err = ioctl(dev_fd, KXTF9_IOCTL_SET_ENABLE, &flags);
         err = err<0 ? -errno : 0;
-        LOGE_IF(err, "KXTF9_IOCTL_SET_ENABLE failed (%s)", strerror(-err));
+        ALOGE_IF(err, "KXTF9_IOCTL_SET_ENABLE failed (%s)", strerror(-err));
         if (!err) {
             mEnabled = flags;
         }
@@ -104,7 +104,7 @@ int AccelerationSensor::enableOrientation(int en)
         }
         err = ioctl(dev_fd, KXTF9_IOCTL_SET_ENABLE, &flags);
         err = err<0 ? -errno : 0;
-        LOGE_IF(err, "KXTF9_IOCTL_SET_ENABLE failed (%s)", strerror(-err));
+        ALOGE_IF(err, "KXTF9_IOCTL_SET_ENABLE failed (%s)", strerror(-err));
         if (!err) {
             mOrientationEnabled = flags;
         }
@@ -142,7 +142,7 @@ int AccelerationSensor::readEvents(sensors_event_t* data, int count)
 
     while (count && mInputReader.readEvent(&event)) {
         int type = event->type;
-//        LOGW("AccelerationSensor (type=%d, code=%d)", type, event->code);
+//        ALOGW("AccelerationSensor (type=%d, code=%d)", type, event->code);
 
         if (type == EV_ABS) {
             processEvent(event->code, event->value);
@@ -157,12 +157,12 @@ int AccelerationSensor::readEvents(sensors_event_t* data, int count)
         // accelerometer sends valid ABS events for
         // userspace using EVIOCGABS
         } else { 
-            LOGE("AccelerationSensor: unknown event (type=%d, code=%d)",
+            ALOGE("AccelerationSensor: unknown event (type=%d, code=%d)",
                     type, event->code);
         }
         mInputReader.next();
     }
-//    LOGW("AccelerationSensor numEventReceived=%d", numEventReceived);
+//    ALOGW("AccelerationSensor numEventReceived=%d", numEventReceived);
     return numEventReceived;
 }
 

@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq ($(filter smba9701,$(TARGET_DEVICE)),)
 
 LOCAL_PATH:= $(call my-dir)
 
@@ -45,3 +46,5 @@ LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_MODULE := sensors.tegra
 
 include $(BUILD_SHARED_LIBRARY)
+
+endif
