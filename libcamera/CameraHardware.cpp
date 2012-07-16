@@ -1272,7 +1272,7 @@ void CameraHardware::initHeapLocked()
 
 int CameraHardware::previewThread()
 {
-    LOGV("CameraHardware::previewThread: this=%p",this);
+    ALOGV("CameraHardware::previewThread: this=%p",this);
 
     int previewFrameRate = mParameters.getPreviewFrameRate();
 
@@ -1460,7 +1460,7 @@ int CameraHardware::previewThread()
         mDataCbTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, mRecordingHeap, recBufferIdx, mCallbackCookie);
 	}
 
-    LOGV("previewThread OK");
+    ALOGV("previewThread OK");
 
     // Wait for it...
     usleep(delay);
@@ -1554,7 +1554,7 @@ void CameraHardware::fillPreviewWindow(uint8_t* yuyv, int srcWidth, int srcHeigh
 		bytesPerPixel = 2;
 	}
 
-	LOGV("ANativeWindow: bits:%p, stride in pixels:%d, w:%d, h: %d, format: %d",vaddr,stride,mPreviewWinWidth,mPreviewWinHeight,mPreviewWinFmt);
+	ALOGV("ANativeWindow: bits:%p, stride in pixels:%d, w:%d, h: %d, format: %d",vaddr,stride,mPreviewWinWidth,mPreviewWinHeight,mPreviewWinFmt);
 
 	// Based on the destination pixel type, we must convert from YUYV to it
 	int dstStride = bytesPerPixel * stride;

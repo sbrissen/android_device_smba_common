@@ -1915,9 +1915,9 @@ error_out:
 		for (i = 0; i < cnt; i++) {
 			struct mixer_ctl* x = mixer_get_ctl(adev->mixer,i);
 			if (x != NULL) {
-				char name[128];
+				char *name;
 				const char* type;
-				mixer_ctl_get_name(x,name,sizeof(name));
+				name=mixer_ctl_get_name(x);
 				type = mixer_ctl_get_type_string(x);
 				ALOGD("#%d: '%s' [%s]",i,name,type);		
 			}

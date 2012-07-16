@@ -20,8 +20,11 @@
 # to only building on ARM if they include assembly. Individual makefiles
 # are responsible for having their own logic, for fine-grained control.
 
+ifneq ($(filter harmony, $(TARGET_BOOTLOADER_BOARD_NAME)),)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
+
+endif
