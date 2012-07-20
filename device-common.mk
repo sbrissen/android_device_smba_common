@@ -64,7 +64,8 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 
 # Media
 PRODUCT_COPY_FILES += \
-    device/malata/smba_common/prebuilt/media_profiles.xml:system/etc/media_profiles.xml
+    device/malata/smba_common/prebuilt/media_profiles.xml:system/etc/media_profiles.xml \
+    device/malata/smba_common/prebuilt/media_codecs.xml:system/etc/media_codecs.xml
 
 # Harmony Configs
 PRODUCT_COPY_FILES += \
