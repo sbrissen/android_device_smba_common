@@ -1,7 +1,5 @@
 BUILD_OLD_LIBCAMERA:=
 
-ifneq ($(filter smba9701,$(TARGET_DEVICE)),)
-
 ifneq ($(BUILD_TINY_ANDROID),true)
 
 LOCAL_PATH:= $(call my-dir)
@@ -33,4 +31,3 @@ include $(BUILD_SHARED_LIBRARY)
 
 endif # not BUILD_TINY_ANDROID
 
-endif
