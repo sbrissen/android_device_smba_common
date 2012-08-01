@@ -25,13 +25,14 @@ PRODUCT_AAPT_PREF_CONFIG := mdpi
 PRODUCT_CHARACTERISTICS := tablet
 
 # HAL
-#  temp remove sensors.tegra, lights.tegra
+#  temp remove libmbm-ril
 PRODUCT_PACKAGES += \
     audio.a2dp.default \
     audio.primary.tegra \
     libaudioutils \
     gps.tegra \
-    libmbm-ril
+    lights.tegra \
+    sensors.tegra
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
