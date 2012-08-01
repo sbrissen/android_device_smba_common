@@ -64,7 +64,7 @@
 #define MIXER_SPK                           "HPOut Mix"
 
 /* ALSA card */
-#define PCM_CARD_ADAM 0
+#define PCM_CARD_SMBA 0
 
 /* ALSA ports for card0 */
 #define PCM_DEVICE_MM		0 /* CODEC port */
@@ -102,7 +102,7 @@ enum {
     OUT_BUFFER_TYPE_LONG,
 };
 
-static const struct pcm_config pcm_config_out = {
+struct pcm_config pcm_config_out = {
     .channels = 2,
     .rate = OUT_SAMPLING_RATE,
     .period_size = OUT_PERIOD_SIZE,
@@ -111,7 +111,7 @@ static const struct pcm_config pcm_config_out = {
     .start_threshold = OUT_PERIOD_SIZE * OUT_SHORT_PERIOD_COUNT,
 };
 
-static const struct pcm_config pcm_config_in = {
+struct pcm_config pcm_config_in = {
     .channels = 2,
     .rate = IN_SAMPLING_RATE,
     .period_size = IN_PERIOD_SIZE,
@@ -121,7 +121,7 @@ static const struct pcm_config pcm_config_in = {
     .stop_threshold = (IN_PERIOD_SIZE * IN_PERIOD_COUNT),
 };
 
-static const struct pcm_config pcm_config_sco = {
+struct pcm_config pcm_config_sco = {
     .channels = 1,
     .rate = SCO_SAMPLING_RATE,
     .period_size = SCO_PERIOD_SIZE,
@@ -173,7 +173,7 @@ struct route_setting defaults[] = {
     },
     {
         .ctl_name = INTERNAL_SPEAKER_SWITCH,
-        .intval = 0,
+        .intval = 1,
     },
     {
         .ctl_name = MIXER_MIC_LEFT_CAPTURE_SWITCH,
@@ -500,7 +500,7 @@ static int start_output_stream(struct stream_out *out)
 		}
 			
 	ALOGD("start_output_stream: device:%d, rate:%d, channels:%d",device,out->pcm_config.rate, out->pcm_config.channels);
-    out->pcm = pcm_open(PCM_CARD_ADAM, device, PCM_OUT | PCM_NORESTART, &out->pcm_config);
+    out->pcm = pcm_open(PCM_CARD_SMBA, device, PCM_OUT | PCM_NORESTART, &out->pcm_config);
 
     if (out->pcm && !pcm_is_ready(out->pcm)) {
         ALOGE("pcm_open(out) failed: %s", pcm_get_error(out->pcm));
@@ -533,7 +533,7 @@ static int start_input_stream(struct stream_in *in)
     }
 
 	ALOGD("start_input_stream: device:%d, rate:%d, channels:%d",device,in->pcm_config.rate,in->pcm_config.channels);
-    in->pcm = pcm_open(PCM_CARD_ADAM, device, PCM_IN, &in->pcm_config);
+    in->pcm = pcm_open(PCM_CARD_SMBA, device, PCM_IN, &in->pcm_config);
 
     if (in->pcm && !pcm_is_ready(in->pcm)) {
         ALOGE("pcm_open(in) failed: %s", pcm_get_error(in->pcm));
@@ -1609,7 +1609,7 @@ struct audio_module HAL_MODULE_INFO_SYM = {
         .module_api_version = AUDIO_MODULE_API_VERSION_0_1,
         .hal_api_version = HARDWARE_HAL_API_VERSION,
         .id = AUDIO_HARDWARE_MODULE_ID,
-        .name = "Adam audio HW HAL",
+        .name = "SMBA1002 audio HW HAL",
         .author = "The Android Open Source Project",
         .methods = &hal_module_methods,
     },
