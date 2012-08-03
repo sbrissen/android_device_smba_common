@@ -34,7 +34,7 @@ extern "C" {
 #ifdef DEBUG_FRAME
 #define LOG_FRAME ALOGD
 #else
-#define LOG_FRAME LOGV
+#define LOG_FRAME ALOGV
 #endif
 
 namespace android {
