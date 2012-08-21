@@ -32,6 +32,7 @@ PRODUCT_PACKAGES += \
     libaudioutils \
     gps.tegra \
     lights.tegra \
+    camera.tegra \
     sensors.tegra
 
 # Filesystem management tools
@@ -75,8 +76,8 @@ PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/init.harmony.usb.rc:root/init.harmony.usb.rc \
     device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
     device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
-    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt \
-    device/malata/smba_common/prebuilt/sysctl.conf:system/etc/sysctl.conf
+    device/malata/smba_common/prebuilt/02zram:system/etc/init.d \
+    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt 
 
 # Bluetooth
 PRODUCT_COPY_FILES += \

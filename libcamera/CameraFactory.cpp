@@ -19,8 +19,8 @@
  * available
  */
 
-#define LOG_NDEBUG 0
-#define LOG_TAG "Camera_Factory"
+#define ALOG_NDEBUG 0
+#define ALOG_TAG "Camera_Factory"
 #include <cutils/log.h>
 #include <cutils/properties.h>
 #include <fcntl.h>
