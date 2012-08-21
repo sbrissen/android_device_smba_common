@@ -105,7 +105,7 @@ extern "C" {
 #endif
 
 // File to control camera power
-#define CAMERA_POWER	    "/sys/devices/platform/adam-pm-camera/power_on"
+#define CAMERA_POWER	    "/sys/devices/platform/smba-pm-camera/power_on"
 
 
 namespace android {
