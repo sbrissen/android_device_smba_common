@@ -1,11 +1,5 @@
 #!/system/bin/sh
+#Enable zram based on Rom Selection
+#Uses existing compcache handler
 
-DISK_SIZE=75
-
-echo $(($DISK_SIZE*1024*1024)) > /sys/devices/virtual/block/zram0/disksize
-
-mkswap /dev/block/zram0
-
-swapon /dev/block/zram0
-
-exit 0
+sh /system/bin/handle_compcache
