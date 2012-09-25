@@ -31,6 +31,9 @@
 #include <cutils/sched_policy.h>
 #include <utils/threads.h>
 
+#ifdef QCOM_HARDWARE
+#include <media/IDirectTrackClient.h>
+#endif
 namespace android {
 
 // ----------------------------------------------------------------------------
@@ -39,7 +42,11 @@ class audio_track_cblk_t;
 
 // ----------------------------------------------------------------------------
 
-class AudioTrack : virtual public RefBase
+class AudioTrack :
+#ifdef QCOM_HARDWARE
+                   public BnDirectTrackClient,
+#endif
+                   virtual public RefBase
 {
 public:
     enum channel_index {
@@ -192,7 +199,7 @@ public:
                                     callback_t cbf      = NULL,
                                     void* user          = NULL,
                                     int notificationFrames = 0,
-                                    int sessionId       = 0);
+                                    int sessionId = 0);
 
     /* Terminates the AudioTrack and unregisters it from AudioFlinger.
      * Also destroys all resources associated with the AudioTrack.
@@ -219,7 +226,6 @@ public:
                             const sp<IMemory>& sharedBuffer = 0,
                             bool threadCanCallJava = false,
                             int sessionId       = 0);
-
 
     /* Result of constructing the AudioTrack. This must be checked
      * before using any AudioTrack API (except for set()), because using
@@ -394,11 +400,8 @@ public:
      */
             int    getSessionId() const;
 
-// ## Compatibility enum to be able to use ICS propietary libs with JB - As soon as JB
-//  propietary libs are released, this declaration can go away... 			
             int    getSessionId();
-// ##			
-			
+
     /* Attach track auxiliary output to specified effect. Use effectId = 0
      * to detach track from effect.
      *
@@ -456,6 +459,11 @@ public:
      */
             status_t dump(int fd, const Vector<String16>& args) const;
 
+#ifdef QCOM_HARDWARE
+            virtual void notify(int msg);
+            virtual status_t getTimeStamp(uint64_t *tstamp);
+#endif
+
 protected:
     /* copying audio tracks is not allowed */
                         AudioTrack(const AudioTrack& other);
@@ -503,6 +511,9 @@ protected:
             status_t restoreTrack_l(audio_track_cblk_t*& cblk, bool fromStart);
             bool stopped_l() const { return !mActive; }
 
+#ifdef QCOM_HARDWARE
+    sp<IDirectTrack>        mDirectTrack;
+#endif
     sp<IAudioTrack>         mAudioTrack;
     sp<IMemory>             mCblkMemory;
     sp<AudioTrackThread>    mAudioTrackThread;
@@ -536,10 +547,17 @@ protected:
     uint32_t                mUpdatePeriod;
     bool                    mFlushed; // FIXME will be made obsolete by making flush() synchronous
     audio_output_flags_t    mFlags;
+#ifdef QCOM_HARDWARE
+    sp<IAudioFlinger>       mAudioFlinger;
+    audio_io_handle_t       mAudioDirectOutput;
+#endif
     int                     mSessionId;
     int                     mAuxEffectId;
     mutable Mutex           mLock;
     status_t                mRestoreStatus;
+#ifdef QCOM_HARDWARE
+    void*                   mObserver;
+#endif
     bool                    mIsTimed;
     int                     mPreviousPriority;          // before start()
     SchedPolicy             mPreviousSchedulingGroup;
