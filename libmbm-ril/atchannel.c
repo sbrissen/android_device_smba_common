@@ -200,7 +200,7 @@ static struct atcontext *getAtContext(void)
                  "no defaultAtContext set!! This IS a bug! "
                  "A crash is probably nearby!", __func__);
         }
-    } 
+    }
 
     return ac;
 }
@@ -493,7 +493,7 @@ static const char *readline(void)
             p_read = ac->ATBuffer + len;
             ac->ATBufferCur = ac->ATBuffer;
         }
-        /* Otherwise, (p_eol !- NULL) there is a complete line 
+        /* Otherwise, (p_eol !- NULL) there is a complete line
            that will be returned from the while () loop below. */
     }
 
@@ -590,7 +590,7 @@ static const char *readline(void)
     /* The extra EOS added after read takes care of the case when there is no
      * valid data after p_eol.
      */
-    ac->ATBufferCur = p_eol + 1;     /* This will always be <= p_read,    
+    ac->ATBufferCur = p_eol + 1;     /* This will always be <= p_read,
                                         and there will be a \0 at *p_read. */
 
     ALOGI("AT(%d)< %s", ac->fd, ret);
@@ -833,7 +833,7 @@ int at_open(int fd, ATUnsolHandler h)
         ALOGE("%s() InitializeAtContext failed!", __func__);
         goto error;
     }
-    
+
     ac = getAtContext();
 
     ac->fd = fd;

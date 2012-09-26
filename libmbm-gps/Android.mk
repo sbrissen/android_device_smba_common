@@ -1,11 +1,11 @@
 # Use hardware GPS implementation if available.
 #
-ifeq ($(BOARD_USES_MBM_GPS),true)
+ifeq ($(strip $(BOARD_USES_MBM_GPS)),true)
 
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := gps.tegra
+LOCAL_MODULE := gps.$(TARGET_PRODUCT)
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SRC_FILES := \

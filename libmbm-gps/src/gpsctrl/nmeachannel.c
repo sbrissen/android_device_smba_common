@@ -54,7 +54,7 @@ static int writeline (int fd, const char *s)
     ssize_t written;
     char *cmd = NULL;
 
-    ALOGD("NMEA(%d)> %s\n", fd, s);
+    LOGD("NMEA(%d)> %s\n", fd, s);
 
     len = asprintf(&cmd, "%s\r\n", s);
 
@@ -83,7 +83,7 @@ int nmea_activate_port (int nmea_fd)
 
     ret = writeline(nmea_fd, "AT*E2GPSNPD");
     if (ret < 0) {
-        ALOGE("%s, error setting up port for nmea data", __FUNCTION__);
+        LOGE("%s, error setting up port for nmea data", __FUNCTION__);
         return -1;
     }
 
@@ -96,11 +96,11 @@ int nmea_open (char *dev)
     int nmea_fd;
     struct termios ios;
 
-    ALOGD("%s", __FUNCTION__);
+    LOGD("%s", __FUNCTION__);
 
     nmea_fd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
     if (nmea_fd < 0) {
-        ALOGE("%s, nmea_fd < 0", __FUNCTION__);
+        LOGE("%s, nmea_fd < 0", __FUNCTION__);
         return -1;
     }
 
@@ -122,11 +122,11 @@ int nmea_open (char *dev)
     /* setup port for receiving nmea data */
     ret = writeline(nmea_fd, "AT");
     if (ret < 0) {
-        ALOGE("%s, error setting up port for nmea data", __FUNCTION__);
+        LOGE("%s, error setting up port for nmea data", __FUNCTION__);
         return -1;
     }
 
-    ALOGD("%s, pausing to let nmea port settle", __FUNCTION__);
+    LOGD("%s, pausing to let nmea port settle", __FUNCTION__);
     sleep(1);
 
     return nmea_fd;
@@ -134,6 +134,6 @@ int nmea_open (char *dev)
 
 void nmea_close (int fd)
 {
-    ALOGD("%s", __FUNCTION__);
+    LOGD("%s", __FUNCTION__);
     close(fd);
 }

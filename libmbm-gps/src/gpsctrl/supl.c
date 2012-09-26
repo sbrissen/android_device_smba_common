@@ -40,38 +40,38 @@ void* onUnknownCertificate (void *data)
 
     line = (char *) data;
 
-    ALOGD("%s: %s", __FUNCTION__, line);
+    LOGD("%s: %s", __FUNCTION__, line);
 
     err = at_tok_start(&line);
     if (err < 0) {
-        ALOGE("%s error parsing data", __FUNCTION__);
+        LOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &ignore);
     if (err < 0) {
-        ALOGE("%s error parsing data", __FUNCTION__);
+        LOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &msg_id);
     if (err < 0) {
-        ALOGE("%s error parsing data", __FUNCTION__);
+        LOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &app_id);
     if (err < 0) {
-        ALOGE("%s error parsing data", __FUNCTION__);
+        LOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
-    ALOGD("%s, msg_id=%d, app_id=%d", __FUNCTION__, msg_id, app_id);
+    LOGD("%s, msg_id=%d, app_id=%d", __FUNCTION__, msg_id, app_id);
 
     err = at_send_command("AT*E2CERTUNREPLY=%d,%d", msg_id,
                    context->supl_config.allow_uncert);
     if (err < 0) {
-        ALOGE("%s error sending at command", __FUNCTION__);
+        LOGE("%s error sending at command", __FUNCTION__);
         return NULL;
     }
 
@@ -86,53 +86,53 @@ void* onSuplNiRequest(void *data)
     GpsCtrlSuplNiRequest ni_request;
     GpsCtrlContext *context = get_context();
     line = (char *) data;
-    ALOGD("%s, %s", __FUNCTION__, line);
+    LOGD("%s, %s", __FUNCTION__, line);
 
     err = at_tok_start(&line);
     if (err < 0) {
-        ALOGE("%s error parsing data", __FUNCTION__);
+        LOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &ignore);
     if (err < 0) {
-        ALOGE("%s error parsing data", __FUNCTION__);
+        LOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &ni_request.message_id);
     if (err < 0) {
-        ALOGE("%s error parsing data message id", __FUNCTION__);
+        LOGE("%s error parsing data message id", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &ni_request.message_type);
     if (err < 0) {
-        ALOGE("%s error parsing data message type", __FUNCTION__);
+        LOGE("%s error parsing data message type", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &ni_request.requestor_id_type);
     if (err < 0) {
-        ALOGW("%s error parsing data requestor id type", __FUNCTION__);
+        LOGW("%s error parsing data requestor id type", __FUNCTION__);
         ni_request.requestor_id_type = -1;
     }
 
     err = at_tok_nextstr(&line, &ni_request.requestor_id_text);
     if (err < 0) {
-        ALOGW("%s error parsing data requestor id text", __FUNCTION__);
+        LOGW("%s error parsing data requestor id text", __FUNCTION__);
         ni_request.requestor_id_text = "";
     }
 
     err = at_tok_nextint(&line, &ni_request.client_name_type);
     if (err < 0) {
-        ALOGW("%s error parsing data client name type", __FUNCTION__);
+        LOGW("%s error parsing data client name type", __FUNCTION__);
         ni_request.client_name_type = -1;
     }
 
     err = at_tok_nextstr(&line, &ni_request.client_name_text);
     if (err < 0) {
-        ALOGW("%s error parsing data clien name text", __FUNCTION__);
+        LOGW("%s error parsing data clien name text", __FUNCTION__);
         ni_request.client_name_text = "";
     }
 
@@ -144,12 +144,12 @@ void* onSuplNiRequest(void *data)
 int supl_send_ni_reply (int msg_id, int allow)
 {
     int err;
-    ALOGD("%s, msg_id=%d, allow=%d", __FUNCTION__, msg_id, allow);
+    LOGD("%s, msg_id=%d, allow=%d", __FUNCTION__, msg_id, allow);
 
     err = at_send_command("AT*E2GPSSUPLNIREPLY=%d,%d", msg_id,
                    allow);
     if (err < 0) {
-        ALOGE("%s error sending at command", __FUNCTION__);
+        LOGE("%s error sending at command", __FUNCTION__);
         return -1;
     }
 
@@ -186,7 +186,7 @@ static int setCharEncoding(const char *enc){
     int err;
     err = at_send_command("AT+CSCS=\"%s\"", enc);
     if (err < 0) {
-        ALOGE("requestSetupDefaultPDP: Failed to set AT+CSCS=%s", enc);
+        LOGE("requestSetupDefaultPDP: Failed to set AT+CSCS=%s", enc);
         return -1;
     }
     return 0;
@@ -199,7 +199,7 @@ static char *getCharEncoding(void)
     ATResponse *p_response = NULL;
     err = at_send_command_singleline("AT+CSCS?", "+CSCS:", &p_response);
     if (err < 0) {
-        ALOGE("requestSetupDefaultPDP: Failed to read AT+CSCS?");
+        LOGE("requestSetupDefaultPDP: Failed to read AT+CSCS?");
         return NULL;
     }
 
@@ -263,7 +263,7 @@ static int networkAuth(const char *authentication, const char *user, const char 
         atAuth = "00111";
         break;
     default:
-        ALOGE("setAuthProtocol: Unrecognized authentication type %s. Using default value (CHAP, PAP and None).", authentication);
+        LOGE("setAuthProtocol: Unrecognized authentication type %s. Using default value (CHAP, PAP and None).", authentication);
         atAuth = "00111";
         break;
     }
@@ -313,7 +313,7 @@ int supl_set_apn_info(void)
     int err;
     GpsCtrlContext *context = get_context();
 
-    ALOGD("%s %s", __FUNCTION__, context->supl_config.apn);
+    LOGD("%s %s", __FUNCTION__, context->supl_config.apn);
 
     err = at_send_command("AT+CGDCONT=%d,\"IP\",\"%s\"", SUPL_CID,
                    context->supl_config.apn);
@@ -323,7 +323,7 @@ int supl_set_apn_info(void)
     if (networkAuth(context->supl_config.authtype, context->supl_config.username, context->supl_config.password, SUPL_CID) < 0)
         return -1;
 
-    ALOGD("%s", __FUNCTION__);
+    LOGD("%s", __FUNCTION__);
 
     return 0;
 }
@@ -374,7 +374,7 @@ int supl_init_context(void)
 {
     GpsCtrlContext *context = get_context();
 
-    ALOGD("%s", __FUNCTION__);
+    LOGD("%s", __FUNCTION__);
 
     /* init to empty strings and let the mbm service fill it in */
     asprintf(&context->supl_config.apn, "%s", "");
@@ -401,7 +401,7 @@ int supl_init(void)
     int err;
     GpsCtrlContext *context = get_context();
 
-    ALOGD("%s", __FUNCTION__);
+    LOGD("%s", __FUNCTION__);
 
     err = supl_set_apn_info();
     if (err < 0)
