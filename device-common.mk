@@ -21,6 +21,9 @@ $(call inherit-product, frameworks/native/build/tablet-dalvik-heap.mk)
 # uses mdpi artwork where available
 PRODUCT_AAPT_CONFIG := normal mdpi
 PRODUCT_AAPT_PREF_CONFIG := mdpi
+PRODUCT_LOCALES += mdpi
+
+LOCAL_ACP_UNAVAILABLE := false
 
 PRODUCT_CHARACTERISTICS := tablet
 
@@ -28,7 +31,8 @@ PRODUCT_CHARACTERISTICS := tablet
 #  temp remove libmbm-ril
 PRODUCT_PACKAGES += \
     audio.a2dp.default \
-    audio.primary.tegra \
+    audio.primary.harmony \
+    audio.usb.default \
     libaudioutils \
     gps.tegra \
     lights.tegra \
@@ -37,11 +41,12 @@ PRODUCT_PACKAGES += \
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
-	setup_fs
-
-PRODUCT_PACKAGES += \
-	librs_jni \
-	com.android.future.usb.accessory 
+        librs_jni \
+	setup_fs \
+        make_ext4fs \
+        l2ping \
+        hcitool \
+        bttest
 
 # These are the hardware-specific feature permissions
 PRODUCT_COPY_FILES += \
@@ -64,6 +69,14 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_TAGS += dalvik.gc.type-precise
 
+PRODUCT_PACKAGES += \
+  com.android.future.usb.accessory \
+  libnetcmdiface \
+  librs_jni \
+  l2ping \
+  hcitool \
+  bttest 
+
 # Media
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/media_profiles.xml:system/etc/media_profiles.xml \
@@ -73,6 +86,7 @@ PRODUCT_COPY_FILES += \
 # Harmony Configs
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/init.harmony.rc:root/init.harmony.rc \
+    device/malata/smba_common/prebuilt/fstab.harmony:root/fstab.harmony \
     device/malata/smba_common/prebuilt/init.harmony.usb.rc:root/init.harmony.usb.rc \
     device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
     device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
@@ -81,11 +95,17 @@ PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/03sysctl:system/etc/init.d/03sysctl \
     device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt 
 
+
+PRODUCT_COPY_FILES += \
+   device/malata/smba_common/prebuilt/busybox:system/bin/busybox \
+   device/malata/smba_common/prebuilt/make_ext4fs:system/bin/make_ext4fs
+
 # Bluetooth
 PRODUCT_COPY_FILES += \
     system/bluetooth/data/main.nonsmartphone.conf:system/etc/bluetooth/main.conf \
-    device/malata/smba_common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd
-
+    device/malata/smba_common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd \
+    device/malata/smba_common/prebuilt/bt_vendor.conf:system/etc/bluetooth/bt_vendor.conf \
+   
 # Touchscreen
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/at168_touch.idc:system/usr/idc/at168_touch.idc 

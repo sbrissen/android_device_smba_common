@@ -17,7 +17,7 @@
 # This variable is set first, so it can be overridden
 # by BoardConfigVendor.mk
 USE_CAMERA_STUB := false
-
+BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/malata/smba_common/bluetooth
 TARGET_PREBUILT_KERNEL := device/malata/smba_common/prebuilt/kernel
 
 TARGET_SPECIFIC_HEADER_PATH := device/malata/smba_common/include
@@ -30,12 +30,15 @@ BOARD_USE_SKIA_LCDTEXT := true
 SMALLER_FONT_FOOTPRINT := true
 
 #platform
+TARGET_NO_RADIOIMAGE := true
 TARGET_BOARD_PLATFORM := tegra
 TARGET_BOOTLOADER_BOARD_NAME := harmony
+BOARD_EGL_NEEDS_LEGACY_FB := true
 
 #arhitecture
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
+TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a
 TARGET_ARCH_VARIANT_CPU := cortex-a9
 TARGET_ARCH_VARIANT_FPU := vfpv3-d16
@@ -45,10 +48,13 @@ ARCH_ARM_HAVE_TLS_REGISTER := true
 #audio
 BOARD_USES_GENERIC_AUDIO := true
 BOARD_USES_AUDIO_LEGACY := false
+BOARD_USES_ALSA_AUDIO := false
 
 #bluetooth
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
+BOARD_BLUEDROID_VENDOR_CONF := device/malata/smba_common/bluetooth/libbt_vndcfg.txt
+BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR ?= device/malata/smba_common/bluetooth
 
 #graphics
 BOARD_EGL_CFG := device/malata/smba_common/prebuilt/egl.cfg
@@ -70,7 +76,7 @@ WIFI_DRIVER_FW_PATH_AP      := "/system/vendor/firmware/fw_bcmdhd_apsta.bin"
 BOARD_KERNEL_BASE := 0x10000000
 BOARD_PAGE_SIZE := 0x00000800
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x01000000
-BOARD_SYSTEMIMAGE_PARTITION_SIZE := 0x0FA00000
+BOARD_SYSTEMIMAGE_PARTITION_SIZE := 0x01900000
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 0x105c0000
 BOARD_FLASH_BLOCK_SIZE := 131072
 
