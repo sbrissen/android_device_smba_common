@@ -71,11 +71,8 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 
 PRODUCT_PACKAGES += \
   com.android.future.usb.accessory \
-  libnetcmdiface \
-  librs_jni \
-  l2ping \
-  hcitool \
-  bttest 
+  libnetcmdiface 
+  
 
 # Media
 PRODUCT_COPY_FILES += \
@@ -93,7 +90,8 @@ PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/compcache:system/bin/compcache \
     device/malata/smba_common/prebuilt/02zram:system/etc/init.d/02zram \
     device/malata/smba_common/prebuilt/03sysctl:system/etc/init.d/03sysctl \
-    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt 
+    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt \
+    device/malata/smba_common/prebuilt/ntfs-3g:system/bin/ntfs-3g 
 
 
 PRODUCT_COPY_FILES += \
@@ -117,7 +115,7 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     BUILD_UTC_DATE=0 \
     wifi.interface=wlan0 \
-    wifi.supplicant_scan_interval=15
+    wifi.supplicant_scan_interval=180
 
 WIFI_BAND := 802_11_ABG
 $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
