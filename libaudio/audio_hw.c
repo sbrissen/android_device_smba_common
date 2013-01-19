@@ -66,7 +66,7 @@
 
 
 /* ALSA card */
-#define PCM_CARD_ADAM 0
+#define PCM_CARD_SMBA 0
 
 /* ALSA ports for card0 */
 #define PCM_DEVICE_MM		0 /* CODEC port */
@@ -148,11 +148,11 @@ struct route_setting defaults[] = {
 	/* Do actual programming */
     {
         .ctl_name = MIXER_PCM_PLAYBACK_VOLUME,
-        .intval = 20,
+        .intval = 23,
     },
     {
-	.ctl_name = MIXER_PCM_CAPTURE_VOLUME,
-	.intval = 25,
+		.ctl_name = MIXER_PCM_CAPTURE_VOLUME,
+		.intval = 28,
     },
     {
         .ctl_name = MIXER_HEADSET_PLAYBACK_VOLUME,
@@ -160,7 +160,7 @@ struct route_setting defaults[] = {
     },
     {
         .ctl_name = MIXER_SPEAKER_PLAYBACK_VOLUME,
-	.intval = 20,
+		.intval = 23,
     },
     {
         .ctl_name = MIXER_MIC_CAPTURE_VOLUME,
@@ -601,7 +601,7 @@ static int start_output_stream(struct stream_out *out)
 		}
 			
 	ALOGD("start_output_stream: device:%d, rate:%d, channels:%d",device,out->config.rate, out->config.channels);
-    out->pcm = pcm_open(PCM_CARD_ADAM, device, PCM_OUT | PCM_NORESTART, &out->config);
+    out->pcm = pcm_open(PCM_CARD_SMBA, device, PCM_OUT | PCM_NORESTART, &out->config);
 
     if (out->pcm && !pcm_is_ready(out->pcm)) {
         ALOGE("pcm_open(out) failed: %s", pcm_get_error(out->pcm));
@@ -636,7 +636,7 @@ static int start_input_stream(struct stream_in *in)
     }
 
 	ALOGD("start_input_stream: device:%d, rate:%d, channels:%d",device,in->config.rate,in->config.channels);
-    in->pcm = pcm_open(PCM_CARD_ADAM, device, PCM_IN, &in->config);
+    in->pcm = pcm_open(PCM_CARD_SMBA, device, PCM_IN, &in->config);
 
     if (in->pcm && !pcm_is_ready(in->pcm)) {
         ALOGE("pcm_open(in) failed: %s", pcm_get_error(in->pcm));
@@ -1651,7 +1651,7 @@ struct audio_module HAL_MODULE_INFO_SYM = {
         .module_api_version = AUDIO_MODULE_API_VERSION_0_1,
         .hal_api_version = HARDWARE_HAL_API_VERSION,
         .id = AUDIO_HARDWARE_MODULE_ID,
-        .name = "Adam audio HW HAL",
+        .name = "Smba audio HW HAL",
         .author = "The Android Open Source Project",
         .methods = &hal_module_methods,
     },
