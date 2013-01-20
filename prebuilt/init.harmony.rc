@@ -36,12 +36,12 @@ on init
 
 on fs
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
-    mount yaffs2 mtd@system /system
-    mount yaffs2 mtd@system /system ro remount
     setprop ro.crypto.tmpfs_options size=128m,mode=0771,uid=1000,gid=1000
-    mount ext4 /dev/block/mmcblk0p2 /data wait noatime nodiratime noauto_da_alloc nosuid nodev
-    mount yaffs2 mtd@cache /cache wait noatime nosuid nodev
- 
+    setprop ro.crypto.umount_sd false
+    setprop ro.crypto.fuse_sdcard true
+    mount ext4 /dev/block/mmcblk0p2 /data wait noatime nosuid nodev
+    mount_all /fstab.harmony    
+    
 on post-fs
     # Keep rootfs rw since FUSE needs dir creation
     mount rootfs rootfs / rw remount
