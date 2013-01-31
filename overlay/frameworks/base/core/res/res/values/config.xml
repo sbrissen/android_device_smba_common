@@ -136,6 +136,9 @@ This must be overridden in platform specific overlays -->
     <!-- Regex of wired ethernet ifaces -->
     <string translatable="false" name="config_ethernet_iface_regex">(eth|usb)\\d</string>
 
+    <!-- Boolean indicating whether the wifi chipset has background scan support -->
+    <bool translatable="false" name="config_wifi_background_scan_support">false</bool>
+
     <!-- Boolean indicating whether the wifi chipset has dual frequency band support -->
     <bool translatable="false" name="config_wifi_dual_band_support">true</bool>
 
@@ -162,7 +165,7 @@ so we have a different variant of this in the stingray overlay.
     <bool name="config_enable_puk_unlock_screen">true</bool>
 
     <!-- Is the notification LED intrusive? Used to decide if there should be a disable option -->
-    <bool name="config_intrusiveNotificationLed">true</bool>
+    <bool name="config_intrusiveNotificationLed">false</bool>
 
     <!-- Base "touch slop" value used by ViewConfiguration as a
 movement threshold where scrolling should begin.
@@ -203,6 +206,26 @@ Specify an array of below items to set override rule.
 re-validation -->
     <bool name="config_bluetooth_address_validation">true</bool>
 
+ <!-- Hardware 'face' keys present on the device, stored as a bit field.
+This integer should equal the sum of the corresponding value for each
+of the following keys present:
+1 - Home
+2 - Back
+4 - Menu
+8 - Assistant (search)
+16 - App switch
+For example, a device with Home, Back and Menu keys would set this
+config to 7. -->
+    <integer name="config_deviceHardwareKeys">15</integer>
+
+<!-- If this is true, the screen will come on when you unplug usb/power/whatever. -->
+    <bool name="config_unplugTurnsOnScreen">false</bool>
+
+    <bool name="config_ui_enableFadingMarquee">false</bool>
+
+    <!-- If this is true, the screen will fade off. -->
+    <bool name="config_animateScreenLights">false</bool>
+
     <!-- Package name(s) containing location provider support.
 These packages can contain services implementing location providers,
 such as the Geocode Provider, Network Location Provider, and
@@ -220,5 +243,15 @@ that matches the signature of at least one package on this list.
         <item>com.android.location.fused</item>
         <item>com.google.android.location</item>
     </string-array>
+
+ <!-- Is the battery LED intrusive? Used to decide if there should be a disable option -->
+    <bool name="config_intrusiveBatteryLed">false</bool>
+
+ <!-- Can we change the battery color? -->
+    <bool name="config_multiColorBatteryLed">false</bool>
+
+ <!-- Setting this true forces the headset jack switches to use the/dev/input/event subsystem
+rather than the uevent framework. -->
+    <bool name="config_useDevInputEventForAudioJack">false</bool>
 
 </resources>
