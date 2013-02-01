@@ -167,6 +167,9 @@ so we have a different variant of this in the stingray overlay.
     <!-- Is the notification LED intrusive? Used to decide if there should be a disable option -->
     <bool name="config_intrusiveNotificationLed">false</bool>
 
+    <!-- True will enable the electron beam screen-off animation. -->
+    <bool name="config_screenOffAnimation">true</bool>
+
     <!-- Base "touch slop" value used by ViewConfiguration as a
 movement threshold where scrolling should begin.
 
