@@ -82,7 +82,7 @@ PRODUCT_COPY_FILES += \
 
 # Harmony Configs
 PRODUCT_COPY_FILES += \
-    device/malata/smba_common/prebuilt/init.harmony.rc:root/init.harmony.rc \
+    device/malata/smba_common/prebuilt/init.rc:root/init.rc \
     device/malata/smba_common/prebuilt/fstab.harmony:root/fstab.harmony \
     device/malata/smba_common/prebuilt/init.harmony.usb.rc:root/init.harmony.usb.rc \
     device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
