@@ -82,14 +82,12 @@ PRODUCT_COPY_FILES += \
 
 # Harmony Configs
 PRODUCT_COPY_FILES += \
-    device/malata/smba_common/prebuilt/ramdisk/init.rc:root/init.rc \    
+    device/malata/smba_common/prebuilt/ramdisk/init.rc:root/init.rc \
     device/malata/smba_common/prebuilt/ramdisk/init.harmony.usb.rc:root/init.harmony.usb.rc \
     device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
     device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
     device/malata/smba_common/prebuilt/compcache:system/bin/compcache \
-    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt \
-     
-
+    device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt
 
 PRODUCT_COPY_FILES += \
    device/malata/smba_common/prebuilt/make_ext4fs:system/bin/make_ext4fs
@@ -97,7 +95,7 @@ PRODUCT_COPY_FILES += \
 # Bluetooth
 PRODUCT_COPY_FILES += \
     system/bluetooth/data/main.nonsmartphone.conf:system/etc/bluetooth/main.conf \
-    device/malata/smba_common/prebuilt/bt_vendor.conf:system/etc/bluetooth/bt_vendor.conf \
+    device/malata/smba_common/prebuilt/bt_vendor.conf:system/etc/bluetooth/bt_vendor.conf 
    
 # Touchscreen
 PRODUCT_COPY_FILES += \
@@ -110,3 +108,4 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 WIFI_BAND := 802_11_ABG
 $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
+
