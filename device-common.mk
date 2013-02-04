@@ -95,13 +95,11 @@ PRODUCT_COPY_FILES += \
 
 
 PRODUCT_COPY_FILES += \
-   device/malata/smba_common/prebuilt/busybox:system/bin/busybox \
    device/malata/smba_common/prebuilt/make_ext4fs:system/bin/make_ext4fs
 
 # Bluetooth
 PRODUCT_COPY_FILES += \
     system/bluetooth/data/main.nonsmartphone.conf:system/etc/bluetooth/main.conf \
-    device/malata/smba_common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd \
     device/malata/smba_common/prebuilt/bt_vendor.conf:system/etc/bluetooth/bt_vendor.conf \
    
 # Touchscreen
