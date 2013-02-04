@@ -82,16 +82,13 @@ PRODUCT_COPY_FILES += \
 
 # Harmony Configs
 PRODUCT_COPY_FILES += \
-    device/malata/smba_common/prebuilt/init.rc:root/init.rc \
-    device/malata/smba_common/prebuilt/fstab.harmony:root/fstab.harmony \
-    device/malata/smba_common/prebuilt/init.harmony.usb.rc:root/init.harmony.usb.rc \
+    device/malata/smba_common/prebuilt/ramdisk/init.rc:root/init.rc \    
+    device/malata/smba_common/prebuilt/ramdisk/init.harmony.usb.rc:root/init.harmony.usb.rc \
     device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
     device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
     device/malata/smba_common/prebuilt/compcache:system/bin/compcache \
-    device/malata/smba_common/prebuilt/02zram:system/etc/init.d/02zram \
-    device/malata/smba_common/prebuilt/03sysctl:system/etc/init.d/03sysctl \
     device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt \
-    device/malata/smba_common/prebuilt/ntfs-3g:system/bin/ntfs-3g 
+     
 
 
 PRODUCT_COPY_FILES += \
@@ -104,11 +101,7 @@ PRODUCT_COPY_FILES += \
    
 # Touchscreen
 PRODUCT_COPY_FILES += \
-    device/malata/smba_common/prebuilt/at168_touch.idc:system/usr/idc/at168_touch.idc 
-
-# Generic
-PRODUCT_COPY_FILES += \
-   device/malata/smba_common/prebuilt/vold.fstab:system/etc/vold.fstab
+    device/malata/smba_common/prebuilt/at168_touch.idc:system/usr/idc/at168_touch.idc
 
 PRODUCT_PROPERTY_OVERRIDES += \
     BUILD_UTC_DATE=0 \
