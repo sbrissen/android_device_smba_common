@@ -24,13 +24,19 @@
 #include <termios.h>
 
 #include "nmeachannel.h"
+#include "../nmea_reader.h"
+#include "gps_ctrl.h"
 
+#define LOG_NDEBUG 0
 #define LOG_TAG "libgpsctrl-nmea"
 #include "../log.h"
 
 int nmea_read (int fd, char *nmea)
 {
+    NmeaContext *context = get_nmea_context();
     int ret;
+
+    ENTER;
 
     do {
         ret = read(fd, nmea, MAX_NMEA_LENGTH);
@@ -40,21 +46,26 @@ int nmea_read (int fd, char *nmea)
     /* remove \r\n */
     if (strncmp(&nmea[ret - 2], "\r\n", 2)) {
         nmea[0] = '\0';
+        EXIT;
         return -1;
     }
     nmea[ret - 2] = '\0';
 
+    EXIT;
     return 0;
 }
 
 static int writeline (int fd, const char *s)
 {
+    NmeaContext *context = get_nmea_context();
     size_t cur = 0;
     size_t len;
     ssize_t written;
     char *cmd = NULL;
 
-    LOGD("NMEA(%d)> %s\n", fd, s);
+    ENTER;
+
+    MBMLOGD("NMEA(%d)> %s\n", fd, s);
 
     len = asprintf(&cmd, "%s\r\n", s);
 
@@ -66,6 +77,8 @@ static int writeline (int fd, const char *s)
 
         if (written < 0) {
             free(cmd);
+            MBMLOGV("%s, error write returned (%d) on nmea port", __FUNCTION__, (int) written);
+            EXIT;
             return -1;
         }
 
@@ -74,33 +87,40 @@ static int writeline (int fd, const char *s)
 
     free(cmd);
 
+    EXIT;
     return 0;
 }
 
 int nmea_activate_port (int nmea_fd)
 {
+    NmeaContext *context = get_nmea_context();
     int ret;
+
+    ENTER;
 
     ret = writeline(nmea_fd, "AT*E2GPSNPD");
     if (ret < 0) {
-        LOGE("%s, error setting up port for nmea data", __FUNCTION__);
+        MBMLOGE("%s, error setting up port for nmea data", __FUNCTION__);
+        EXIT;
         return -1;
     }
 
+    EXIT;
     return 0;
 }
 
 int nmea_open (char *dev)
 {
+    NmeaContext *context = get_nmea_context();
     int ret;
     int nmea_fd;
     struct termios ios;
 
-    LOGD("%s", __FUNCTION__);
+    ENTER;
 
     nmea_fd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
     if (nmea_fd < 0) {
-        LOGE("%s, nmea_fd < 0", __FUNCTION__);
+        MBMLOGE("%s, nmea_fd < 0", __FUNCTION__);
         return -1;
     }
 
@@ -122,18 +142,40 @@ int nmea_open (char *dev)
     /* setup port for receiving nmea data */
     ret = writeline(nmea_fd, "AT");
     if (ret < 0) {
-        LOGE("%s, error setting up port for nmea data", __FUNCTION__);
+        MBMLOGE("%s, error setting up port for nmea data", __FUNCTION__);
         return -1;
     }
 
-    LOGD("%s, pausing to let nmea port settle", __FUNCTION__);
+    MBMLOGD("%s, pausing to let nmea port settle", __FUNCTION__);
     sleep(1);
+
+    EXIT;
 
     return nmea_fd;
 }
 
-void nmea_close (int fd)
+void nmea_close (void)
 {
-    LOGD("%s", __FUNCTION__);
-    close(fd);
+    GpsCtrlContext *context = get_gpsctrl_context();
+
+    if(NULL == context) {
+        ALOGW("%s, context invalid", __FUNCTION__);
+        return;
+    }
+
+    ENTER;
+
+    if (context->nmea_fd >= 0) {
+        MBMLOGV("%s, closing fd=%d", __FUNCTION__, context->nmea_fd);
+        if (close(context->nmea_fd) != 0)
+            MBMLOGE("%s, failed to close fd %d!", __FUNCTION__, context->nmea_fd);
+    } else {
+        MBMLOGV("%s, fd already closed", __FUNCTION__);
+        EXIT;
+        return;
+    }
+
+    context->nmea_fd = -1;
+
+    EXIT;
 }

@@ -25,7 +25,7 @@
 #define CMD_SERVICE_QUIT 2
 #define CMD_SEND_ALL_INFO 3
 
-int service_handler_init(void);
+int service_handler_init(int);
 int service_handler_stop(void);
 void service_handler_send_message (char cmd, char *msg);
 

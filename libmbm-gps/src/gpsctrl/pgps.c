@@ -25,12 +25,13 @@
 #include "../mbm_service_handler.h"
 #include "pgps.h"
 
-#define LOG_TAG "libgpsctrl"
+#define LOG_NDEBUG 0
+#define LOG_TAG "libgpsctrl-pgps"
 #include "../log.h"
-
 
 void* onPgpsUrlReceived(void *data)
 {
+    GpsCtrlContext *context = get_gpsctrl_context();
     int err;
     int ignore;
     int id;
@@ -40,32 +41,32 @@ void* onPgpsUrlReceived(void *data)
 
     err = at_tok_start(&line);
     if (err < 0) {
-        LOGE("%s error parsing data", __FUNCTION__);
+        MBMLOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     /* Ignore 1 integer from line */
     err = at_tok_nextint(&line, &ignore);
     if (err < 0) {
-        LOGE("%s error parsing data", __FUNCTION__);
+        MBMLOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextint(&line, &id);
     if (err < 0) {
-        LOGE("%s error parsing data", __FUNCTION__);
+        MBMLOGE("%s error parsing data", __FUNCTION__);
         return NULL;
     }
 
     err = at_tok_nextstr(&line, &url);
     if (err < 0) {
-        LOGW("%s error parsing pgps url", __FUNCTION__);
+        MBMLOGW("%s error parsing pgps url", __FUNCTION__);
         return NULL;
     }
 
     err = asprintf(&cmd, "%d\n%s", id, url);
     if (err < 0) {
-        LOGE("%s error allocating cmd string", __FUNCTION__);
+        MBMLOGE("%s error allocating cmd string", __FUNCTION__);
         return NULL;
     }
 
@@ -76,30 +77,38 @@ void* onPgpsUrlReceived(void *data)
 
 void onPgpsDataFailed(void)
 {
-    LOGD("%s", __FUNCTION__);
+    GpsCtrlContext *context = get_gpsctrl_context();
+    ENTER;
+    EXIT;
 }
 
 int pgps_set_eedata (int connected)
 {
+    GpsCtrlContext *context = get_gpsctrl_context();
     int err;
 
-    LOGD("%s", __FUNCTION__);
+    ENTER;
 
     if (connected) {
         err = at_send_command("AT*EEGPSEEDATA=1");
-        if (err < 0)
+        if (err < 0) {
+            EXIT;
             return -1;
+        }
     } else {
         err = at_send_command("AT*EEGPSEEDATA=0");
-        if (err < 0)
+        if (err < 0) {
+            EXIT;
             return -1;
+        }
     }
-
+    EXIT;
     return 0;
 }
 
 void pgps_read_data (int id, char *path)
 {
+    GpsCtrlContext *context = get_gpsctrl_context();
     FILE *file;
     long size;
     char *buffer;
@@ -107,9 +116,11 @@ void pgps_read_data (int id, char *path)
     size_t result;
     int err;
 
+    ENTER;
+
     file = fopen(path, "rb");
     if (file == NULL) {
-        LOGE("%s, unable to open file %s", __FUNCTION__, path);
+        MBMLOGE("%s, unable to open file %s", __FUNCTION__, path);
         return;
     }
 
@@ -121,37 +132,41 @@ void pgps_read_data (int id, char *path)
     /* allocate memory to contain the whole file */
     buffer = (char*) malloc (sizeof(char)*size);
     if (buffer == NULL) {
-        LOGE("%s, malloc failed", __FUNCTION__);
+        MBMLOGE("%s, malloc failed", __FUNCTION__);
         fclose(file);
+        EXIT;
         return;
     }
 
     /* copy the file into the buffer */
     result = fread(buffer, 1, size, file);
     if ((long)result != size) {
-        LOGE("%s, error reading file", __FUNCTION__);
+        MBMLOGE("%s, error reading file", __FUNCTION__);
         fclose(file);
         free(buffer);
+        EXIT;
         return;
     }
 
     /* the whole file is now loaded in the memory buffer */
-    LOGD("%s, read from file: %s", __FUNCTION__, buffer);
+    MBMLOGD("%s, read from file: %s", __FUNCTION__, buffer);
 
     err = asprintf(&cmd, "AT*EEGPSEEDATA=1,%d,%d", id, (int)size);
     if (err < 0) {
-        LOGE("%s, error creating command", __FUNCTION__);
+        MBMLOGE("%s, error creating command", __FUNCTION__);
         fclose(file);
         free(buffer);
+        EXIT;
         return;
     }
 
     err = at_send_command_transparent(cmd, buffer, size, "", NULL);
     if (err < 0) {
-        LOGE("%s, error sending pgps data", __FUNCTION__);
+        MBMLOGE("%s, error sending pgps data", __FUNCTION__);
     }
 
     free(cmd);
     fclose(file);
     free(buffer);
+    EXIT;
 }

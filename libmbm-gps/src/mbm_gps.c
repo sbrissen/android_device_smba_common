@@ -24,15 +24,20 @@
 #include <termios.h>
 #include <math.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <cutils/properties.h>
 #include <hardware/gps.h>
 
 #include "gpsctrl/gps_ctrl.h"
 #include "gpsctrl/nmeachannel.h"
+#include "gpsctrl/atchannel.h"
 #include "nmea_reader.h"
 #include "mbm_service_handler.h"
 #include "version.h"
+
+#define LOG_NDEBUG 0
+#define LOG_TAG "libmbm-gps"
 #include "log.h"
 
 /* Just check this file */
@@ -43,7 +48,7 @@
 #define MAX_AT_RESPONSE (8 * 1024)
 #define TIMEOUT_POLL 200
 #define EMRDY_POLL_INTERVAL 1000 /* needs to be a multiple of TIMEOUT_POLL */
-#define TIMEOUT_EMRDY 10000 /* needs to be a multiple of EMRDY_POLL_INTERVAL */
+#define TIMEOUT_EMRDY 15000 /* needs to be a multiple of EMRDY_POLL_INTERVAL */
 
 #define SUPLNI_VERIFY_ALLOW 0
 #define SUPLNI_VERIFY_DENY 1
@@ -57,6 +62,8 @@
 #define PROP_STANDALONE "STANDALONE"
 #define PROP_PGPS "PGPS"
 
+#define TIMEOUT_DEVICE_REMOVED 3
+
 #define SINGLE_SHOT_INTERVAL 9999
 
 #define CLEANUP_REQUESTED -10
@@ -66,7 +73,7 @@ enum {
     CMD_STATUS_CB = 0,
     CMD_AGPS_STATUS_CB,
     CMD_NI_CB,
-    CMD_DEV_LOST,
+    CMD_AT_LOST,
     CMD_QUIT
 };
 
@@ -85,6 +92,8 @@ typedef struct {
     int clear_flag;
     int cleanup_requested;
 
+    int loglevel;
+
     int pref_mode;
     int allow_uncert;
     int enable_ni;
@@ -100,7 +109,7 @@ typedef struct {
     GpsCtrlSuplNiRequest current_ni_request;
     GpsNiNotification notification;
 
-    int control_fd[2];
+    int cmd_fd[2];
 
     pthread_t main_thread;
     pthread_mutex_t mutex;
@@ -132,10 +141,10 @@ void mbm_gps_ni_request(GpsCtrlSuplNiRequest *ni_request)
 {
     GpsContext *context = get_gps_context();
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     if (ni_request == NULL) {
-        LOGE("%s: ni_request = NULL", __FUNCTION__);
+        MBMLOGE("%s: ni_request == NULL", __FUNCTION__);
         return;
     }
 
@@ -148,18 +157,18 @@ void mbm_gps_ni_request(GpsCtrlSuplNiRequest *ni_request)
     context->notification.requestor_id_encoding = GPS_ENC_SUPL_UCS2;
     context->notification.text_encoding = GPS_ENC_SUPL_UCS2;
 
-    LOGD("%s: notification filled with id:%d, type:%d, id_encoding:%d, text_encoding:%d", __FUNCTION__, context->notification.notification_id, context->notification.ni_type, context->notification.requestor_id_encoding, context->notification.text_encoding);
+    MBMLOGD("%s: notification filled with id:%d, type:%d, id_encoding:%d, text_encoding:%d", __FUNCTION__, context->notification.notification_id, context->notification.ni_type, context->notification.requestor_id_encoding, context->notification.text_encoding);
 
     snprintf(context->notification.requestor_id, GPS_NI_SHORT_STRING_MAXLEN,
              "%s", ni_request->requestor_id_text);
 
-    LOGD("%s: requestor id filled with: %s", __FUNCTION__,
+    MBMLOGD("%s: requestor id filled with: %s", __FUNCTION__,
          context->notification.requestor_id);
 
     snprintf(context->notification.text, GPS_NI_LONG_STRING_MAXLEN,
              "%s", ni_request->client_name_text);
 
-    LOGD("%s: text filled with: %s", __FUNCTION__,
+    MBMLOGD("%s: text filled with: %s", __FUNCTION__,
          context->notification.text);
 
     switch (ni_request->message_type) {
@@ -167,50 +176,51 @@ void mbm_gps_ni_request(GpsCtrlSuplNiRequest *ni_request)
         context->notification.notify_flags =
             GPS_NI_NEED_VERIFY | GPS_NI_NEED_NOTIFY;
         context->notification.default_response = GPS_NI_RESPONSE_ACCEPT;
-        LOGD("%s: SUPL_VERIFY_ALLOW", __FUNCTION__);
+        MBMLOGI("%s: SUPL_VERIFY_ALLOW", __FUNCTION__);
         break;
     case SUPLNI_VERIFY_DENY:
         context->notification.notify_flags =
             GPS_NI_NEED_VERIFY | GPS_NI_NEED_NOTIFY;
         context->notification.default_response = GPS_NI_RESPONSE_DENY;
-        LOGD("%s: SUPL_VERIFY_DENY", __FUNCTION__);
+        MBMLOGI("%s: SUPL_VERIFY_DENY", __FUNCTION__);
         break;
     case SUPLNI_NOTIFY:
         context->notification.notify_flags = GPS_NI_NEED_NOTIFY;
         context->notification.default_response = GPS_NI_RESPONSE_ACCEPT;
-        LOGD("%s: SUPL_NOTIFY", __FUNCTION__);
+        MBMLOGI("%s: SUPL_NOTIFY", __FUNCTION__);
         break;
     case SUPLNI_NOTIFY_DENIED:
         context->notification.notify_flags = GPS_NI_NEED_NOTIFY;
         context->notification.default_response = GPS_NI_RESPONSE_DENY;
-        LOGD("%s: SUPL_NOTIFY_DENIED", __FUNCTION__);
+        MBMLOGI("%s: SUPL_NOTIFY_DENIED", __FUNCTION__);
         break;
     default:
-        LOGD("%s: unknown request", __FUNCTION__);
+        MBMLOGI("%s: unknown request", __FUNCTION__);
         break;
     }
 
     add_pending_command(CMD_NI_CB);
-    LOGD("%s: exit", __FUNCTION__);
+
+    EXIT;
+
 }
 
 void mbm_gps_ni_init(GpsNiCallbacks * callbacks)
 {
     GpsContext *context = get_gps_context();
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     if (callbacks == NULL) {
-        LOGE("%s: callbacks = NULL", __FUNCTION__);
+        MBMLOGE("%s: callbacks == NULL", __FUNCTION__);
         return;
     }
 
     context->ni_callback = callbacks->notify_cb;
 
     /* todo register for callback */
-    
-    LOGD("%s: exit", __FUNCTION__);
 
+    EXIT;
 }
 
 void mbm_gps_ni_respond(int notif_id, GpsUserResponseType user_response)
@@ -218,10 +228,10 @@ void mbm_gps_ni_respond(int notif_id, GpsUserResponseType user_response)
     int allow;
     GpsContext *context = get_gps_context();
 
-    LOGD("%s: enter notif_id=%i", __FUNCTION__, notif_id);
+    MBMLOGV("%s: enter notif_id=%i", __FUNCTION__, notif_id);
 
     if (notif_id != context->current_ni_request.message_id) {
-        LOGD("Mismatch in notification ids. Ignoring the response.");
+        MBMLOGE("Mismatch in notification ids. Ignoring the response.");
         return;
     }
 
@@ -244,7 +254,8 @@ void mbm_gps_ni_respond(int notif_id, GpsUserResponseType user_response)
     }
 
     gpsctrl_supl_ni_reply(&context->current_ni_request, allow);
-    LOGD("%s: exit", __FUNCTION__);
+
+    EXIT;
 }
 
 /**
@@ -271,15 +282,15 @@ void mbm_agps_init(AGpsCallbacks * callbacks)
 {
     GpsContext *context = get_gps_context();
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     if (callbacks == NULL) {
-        LOGE("%s: callbacks = NULL", __FUNCTION__);
+        MBMLOGE("%s: callbacks == NULL", __FUNCTION__);
         return;
     }
     context->agps_callbacks = *callbacks;
 
-    LOGD("%s: exit", __FUNCTION__);
+    EXIT;
 }
 
 /* Function is called from java API when AGPS status
@@ -288,9 +299,12 @@ void mbm_agps_init(AGpsCallbacks * callbacks)
 */
 int mbm_agps_data_conn_open(const char *apn)
 {
-    LOGD("%s: enter, apn: %s", __FUNCTION__, apn);
+    GpsContext *context = get_gps_context();
+    (void) apn;
 
-    LOGD("%s: exit", __FUNCTION__);
+    MBMLOGV("%s: enter, apn: %s", __FUNCTION__, apn);
+
+    EXIT;
     return 0;
 }
 
@@ -300,9 +314,10 @@ int mbm_agps_data_conn_open(const char *apn)
 */
 int mbm_agps_data_conn_closed(void)
 {
-    LOGD("%s: enter", __FUNCTION__);
+    GpsContext *context = get_gps_context();
 
-    LOGD("%s: exit", __FUNCTION__);
+    ENTER;
+    EXIT;
     return 0;
 }
 
@@ -312,23 +327,29 @@ int mbm_agps_data_conn_closed(void)
 */
 int mbm_agps_data_conn_failed(void)
 {
-    LOGD("%s: enter", __FUNCTION__);
+    GpsContext *context = get_gps_context();
 
-    LOGD("%s: exit", __FUNCTION__);
+    ENTER;
+    EXIT;
     return 0;
 }
 
 int mbm_agps_set_server(AGpsType type, const char *hostname, int port)
 {
-    LOGD("%s: enter hostname: %s %d %s", __FUNCTION__, hostname, port,
+    GpsContext *context = get_gps_context();
+    (void) type;
+    (void) hostname;
+    (void) port;
+
+    MBMLOGV("%s: enter hostname: %s %d %s", __FUNCTION__, hostname, port,
          type == AGPS_TYPE_SUPL ? "SUPL" : "C2K");
 
     /* This is strange we get C2K if in flight mode?!?!? */
 
     /* store the server to be used in the supl config */
     gpsctrl_set_supl_server((char *)hostname);
-    
-    LOGD("%s: exit", __FUNCTION__);
+
+    EXIT;
     return 0;
 }
 
@@ -369,11 +390,14 @@ static const AGpsInterface mbmAGpsInterface = {
 */
 void mbm_agpsril_init(AGpsRilCallbacks * callbacks)
 {
-    ENTER;
-    if (callbacks == NULL)
-        LOGE("callback null");
-    EXIT;
+    GpsContext *context = get_gps_context();
 
+    ENTER;
+
+    if (callbacks == NULL)
+        MBMLOGE("%s, callback null", __FUNCTION__);
+
+    EXIT;
 }
 
 static const char *agps_refid_str(int type)
@@ -394,11 +418,16 @@ void
 mbm_agpsril_set_ref_location(const AGpsRefLocation * agps_reflocation,
                              size_t sz_struct)
 {
-    ENTER;
-    if (sz_struct != sizeof(AGpsRefLocation))
-        LOGE("AGpsRefLocation struct incorrect size");
+    GpsContext *context = get_gps_context();
+    (void) agps_reflocation;
+    (void) *agps_refid_str;
 
-    LOGD("AGpsRefLocation.type=%s sie=%d",
+    ENTER;
+
+    if (sz_struct != sizeof(AGpsRefLocation))
+        MBMLOGE("AGpsRefLocation struct incorrect size");
+
+    MBMLOGV("%s, AGpsRefLocation.type=%s size=%d", __FUNCTION__,
          agps_refid_str(agps_reflocation->type), sz_struct);
 
     EXIT;
@@ -420,15 +449,24 @@ static const char *agps_setid_str(int type)
 
 void mbm_agpsril_set_set_id(AGpsSetIDType type, const char *setid)
 {
-    ENTER;
-    LOGD("type=%s setid=%s", agps_setid_str(type), setid);
+    GpsContext *context = get_gps_context();
+    (void) type;
+    (void) setid;
+    (void) *agps_setid_str;
+
+    MBMLOGV("%s: enter type=%s setid=%s", __FUNCTION__,
+        agps_setid_str(type), setid);
+
     EXIT;
 }
 
 void mbm_agpsril_ni_message(uint8_t * msg, size_t len)
 {
-    ENTER;
-    LOGD("msg@%p len=%d", msg, len);
+    GpsContext *context = get_gps_context();
+    (void) msg;
+    (void) len;
+
+    MBMLOGV("%s: enter msg@%p len=%d", __FUNCTION__, msg, len);
     EXIT;
 }
 
@@ -438,23 +476,40 @@ mbm_agpsril_update_network_state(int connected, int type, int roaming,
                                  const char *extra_info)
 {
     GpsContext *context = get_gps_context();
+    static int old_conn = -1;
+    static int old_roam = -1;
+    static int old_type = -1;
+
     ENTER;
-    LOGD("connected=%i type=%i roaming=%i, extra_info=%s",
-         connected, type, roaming, extra_info);
+
+    if ((old_conn != connected) || (old_roam != roaming) || (old_type != type)) {
+        MBMLOGI("connected=%i type=%i roaming=%i, extra_info=%s",
+            connected, type, roaming, extra_info);
+        old_conn = connected;
+        old_roam = roaming;
+        old_type = type;
+    }
+
     context->ril_connected = connected;
     context->ril_roaming = roaming;
     context->ril_type = type;
+
     if (context->gps_initiated) {
         gpsctrl_set_is_roaming(roaming);
         gpsctrl_set_is_connected(connected);
     }
-    EXIT;
 
+    EXIT;
 }
 
+static void mbm_agpsril_update_network_availability (int available, const char *apn)
+{
+    GpsContext *context = get_gps_context();
+    (void) available;
+    (void) apn;
 
-static void mbm_agpsril_update_network_availability (int avaiable, const char* apn) {
-    LOGI("%s", __func__);
+    MBMLOGV("%s: enter available=%d apn=%s", __FUNCTION__, available, apn);
+    EXIT;
 }
 
 /* Not implemented just for debug*/
@@ -514,12 +569,14 @@ static int jul_days(struct tm tm_day)
 
 static void utc_to_gps(const time_t time, int *tow, int *week)
 {
+    GpsContext *context = get_gps_context();
+
     struct tm tm_utc;
     struct tm tm_gps;
     int day, days_cnt;
 
     if (tow == NULL || week == NULL) {
-        LOGE("%s: tow/week null", __FUNCTION__);
+        MBMLOGE("%s: tow/week null", __FUNCTION__);
         return;
     }
     gmtime_r(&time, &tm_utc);
@@ -538,7 +595,7 @@ static void utc_to_gps(const time_t time, int *tow, int *week)
 static void add_pending_command(char cmd)
 {
     GpsContext *context = get_gps_context();
-    write(context->control_fd[0], &cmd, 1);
+    write(context->cmd_fd[0], &cmd, 1);
 }
 
 static void nmea_received(char *line)
@@ -546,14 +603,32 @@ static void nmea_received(char *line)
     GpsContext *context = get_gps_context();
 
     if (line == NULL) {
-        LOGE("%s: line null", __FUNCTION__);
+        MBMLOGE("%s: line null", __FUNCTION__);
         return;
     }
 
-    LOGD("%s: %s", __FUNCTION__, (char *) line);
+    MBMLOGD("%s: %s", __FUNCTION__, (char *) line);
 
     if ((strstr(line, "$GP") != NULL) && (strlen(line) > 3))
         nmea_reader_add(context->reader, (char *) line);
+}
+
+void supl_fail(void)
+{
+    GpsContext *context = get_gps_context();
+
+    ENTER;
+
+    pthread_mutex_lock(&context->mutex);
+
+    if (context->gps_started) {
+        MBMLOGI("%s, starting gps in fallback mode", __FUNCTION__);
+        gpsctrl_start_fallback();
+    }
+
+    pthread_mutex_unlock(&context->mutex);
+
+    EXIT;
 }
 
 static int epoll_register(int epoll_fd, int fd)
@@ -565,7 +640,7 @@ static int epoll_register(int epoll_fd, int fd)
     flags = fcntl(fd, F_GETFL);
     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-    ev.events = EPOLLIN;
+    ev.events = EPOLLIN | EPOLLERR | EPOLLHUP;
     ev.data.fd = fd;
     do {
         ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev);
@@ -589,8 +664,7 @@ static int epoll_deregister(int epoll_fd, int fd)
 
 static void onATReaderClosed(void)
 {
-    LOGI("AT channel closed\n");
-    add_pending_command(CMD_DEV_LOST);
+    add_pending_command(CMD_AT_LOST);
 }
 
 static int safe_read(int fd, char *buf, int count)
@@ -609,12 +683,12 @@ static int wait_for_emrdy (int fd, int timeout)
     GpsContext *context = get_gps_context();
     char *at_emrdy = "AT*EMRDY?\r\n";
 
-    LOGI("%s: waiting for EMRDY...", __FUNCTION__);
+    MBMLOGI("Waiting for EMRDY...");
 
     fds[0].fd = fd;
-    fds[0].events = POLLIN;
+    fds[0].events = POLLIN | POLLERR | POLLHUP;
 
-    time = 0;
+    time = TIMEOUT_POLL;
     while (1) {
         /* dump EMRDY? on the line every EMRDY_POLL_INTERVAL to poll if no unsolicited is received
          * don't care if it doesn't work
@@ -624,30 +698,32 @@ static int wait_for_emrdy (int fd, int timeout)
 
         n = poll(fds, 1, TIMEOUT_POLL);
 
-        if (n < 0) {
-            LOGE("%s: Poll error", __FUNCTION__);
+        if ((n < 0) || (fds[0].revents & (POLLERR | POLLHUP))) {
+            MBMLOGE("%s: Poll error", __FUNCTION__);
             return -1;
-        } else if ((n > 0) && (fds[0].revents & (POLLIN | POLLERR))) {
-            LOGD("%s, got an event", __FUNCTION__);
+        } else if ((n > 0) && (fds[0].revents & POLLIN)) {
+            MBMLOGD("%s, got an event", __FUNCTION__);
             memset(start, 0, MAX_AT_RESPONSE);
             len = safe_read(fd, start, MAX_AT_RESPONSE - 1);
 
             if (start == NULL)
-                LOGI("%s: Eiii empty string", __FUNCTION__);
-            else if (strstr(start, "EMRDY: 1") == NULL)
-                LOGI("%s: Eiii this was not EMRDY: %s", __FUNCTION__, start);
-            else
+                MBMLOGW("Oops, empty string");
+            else if (strstr(start, "EMRDY: 0") != NULL)
+                MBMLOGW("Oops, not EMRDY yet");
+            else if (strstr(start, "EMRDY: 1") != NULL)
                 break;
+            else
+                MBMLOGW("Oops, this was not EMRDY [%s]",start);
 
             /* sleep a while to not increase the time variable to quickly */
             usleep(TIMEOUT_POLL * 1000);
         }
 
         if (context->cleanup_requested) {
-            LOGD("%s, aborting because of cleanup requested", __FUNCTION__);
+            MBMLOGW("aborting because of cleanup requested");
             return CLEANUP_REQUESTED;
         } else if (time >= timeout) {
-            LOGE("%s: timeout, go ahead anyway(might work)...", __FUNCTION__);
+            MBMLOGW("EMRDY timeout, go ahead anyway(might work)...");
             return 0;
         }
 
@@ -655,42 +731,42 @@ static int wait_for_emrdy (int fd, int timeout)
     }
 
     if (context->cleanup_requested) {
-        LOGD("%s: Got EMRDY but aborting because of cleanup requested", __FUNCTION__);
+        MBMLOGI("%s: Got EMRDY but aborting because of cleanup requested", __FUNCTION__);
         return CLEANUP_REQUESTED;
     } else {
-        LOGI("%s: Got EMRDY", __FUNCTION__);
+        MBMLOGI("Got EMRDY");
         return 0;
     }
 }
 
 /* open ctrl device */
-int open_ctrl_device(void)
+int open_at_channel(void)
 {
-    int ctrl_fd;
-    char *ctrl_dev = gpsctrl_get_ctrl_device();
+    int at_fd, ret;
+    char *at_dev = gpsctrl_get_at_device();
     GpsContext *context = get_gps_context();
 
-    LOGD("%s trying to open device", __FUNCTION__);
+    MBMLOGI("Trying to open (%s)", at_dev);
     while (1) {
         if (context->cleanup_requested) {
-            LOGD("%s, aborting because of cleanup", __FUNCTION__);
+            MBMLOGW("%s, aborting because of cleanup", __FUNCTION__);
             return CLEANUP_REQUESTED;
         }
-        ctrl_fd = open(ctrl_dev, O_RDWR | O_NONBLOCK);
-        if (ctrl_fd < 0) {
-            LOGD("%s, ctrl_fd < 0, dev:%s, error:%s", __FUNCTION__, ctrl_dev, strerror(errno));
-            LOGD("Trying again");
+        at_fd = open(at_dev, O_RDWR | O_NONBLOCK);
+        if (at_fd < 0) {
+            MBMLOGD("%s, at_fd < 0, dev:%s, error:%s", __FUNCTION__, at_dev, strerror(errno));
+            MBMLOGD("Trying again");
             sleep(1);
         } else
             break;
     }
 
-    if (strstr(ctrl_dev, "/dev/ttyA")) {
+    if (strstr(at_dev, "/dev/ttyA")) {
         struct termios ios;
-        LOGD("%s, flushing device", __FUNCTION__);
+        MBMLOGD("%s, flushing device", __FUNCTION__);
         /* Clear the struct and then call cfmakeraw*/
-        tcflush(ctrl_fd, TCIOFLUSH);
-        tcgetattr(ctrl_fd, &ios);
+        tcflush(at_fd, TCIOFLUSH);
+        tcgetattr(at_fd, &ios);
         memset(&ios, 0, sizeof(struct termios));
         cfmakeraw(&ios);
         /* OK now we are in a known state, set what we want*/
@@ -698,22 +774,27 @@ int open_ctrl_device(void)
         /* ios.c_cc[VMIN]  = 0; */
         /* ios.c_cc[VTIME] = 1; */
         ios.c_cflag |= CS8;
-        tcsetattr(ctrl_fd, TCSANOW, &ios);
-        tcflush(ctrl_fd, TCIOFLUSH);
-        tcsetattr(ctrl_fd, TCSANOW, &ios);
-        tcflush(ctrl_fd, TCIOFLUSH);
-        tcflush(ctrl_fd, TCIOFLUSH);
+        tcsetattr(at_fd, TCSANOW, &ios);
+        tcflush(at_fd, TCIOFLUSH);
+        tcsetattr(at_fd, TCSANOW, &ios);
+        tcflush(at_fd, TCIOFLUSH);
+        tcflush(at_fd, TCIOFLUSH);
         cfsetospeed(&ios, B115200);
         cfsetispeed(&ios, B115200);
-        tcsetattr(ctrl_fd, TCSANOW, &ios);
+        tcsetattr(at_fd, TCSANOW, &ios);
 
-        fcntl(ctrl_fd, F_SETFL, 0);
+        fcntl(at_fd, F_SETFL, 0);
     }
 
-    if (wait_for_emrdy(ctrl_fd, TIMEOUT_EMRDY) == CLEANUP_REQUESTED)
+    ret = wait_for_emrdy(at_fd, TIMEOUT_EMRDY);
+
+    if (ret == CLEANUP_REQUESTED)
         return CLEANUP_REQUESTED;
-    else
-        return ctrl_fd;
+    else if (ret == -1) {
+        close(at_fd);
+        return -1;
+    } else
+        return at_fd;
 }
 
 
@@ -722,33 +803,51 @@ int open_ctrl_device(void)
  */
 static void main_loop(void *arg)
 {
-    int epoll_fd = epoll_create(1);
+    GpsCtrlContext *ctrlcontext = get_gpsctrl_context();
+    GpsContext *context = get_gps_context();
+    int cmd_fd = context->cmd_fd[1];
+    int epoll_fd = -1;
     char cmd = 255;
     char nmea[MAX_NMEA_LENGTH];
     int ret;
-    int ctrl_fd;
+    int at_fd;
     int nmea_fd = -1;
-    int device_lost;
-    GpsContext *context = get_gps_context();
-    int control_fd = context->control_fd[1];
+    int at_channel_lost;
+    int nmea_channel_lost;
+    int i, at_dev, nmea_dev;
+    struct stat sb;
     (void) arg;
 
-    LOGD("Starting main loop");
+    ENTER;
+
+    while (epoll_fd < 0) {
+        if (context->cleanup_requested)
+            goto exit;
+        epoll_fd = epoll_create(2);
+        if (epoll_fd < 0) {
+            MBMLOGE("epoll_create() unexpected error: %s. Retrying...",
+                strerror(errno));
+            sleep(1);
+        }
+    }
 
     while (1) {
-        device_lost = 0;
-        ctrl_fd = open_ctrl_device();
-        if (ctrl_fd == CLEANUP_REQUESTED)
+        at_channel_lost = 0;
+        nmea_channel_lost = 0;
+        at_fd = open_at_channel();
+        if (at_fd == CLEANUP_REQUESTED)
             goto exit;
-        else if (ctrl_fd < 0) {
-            LOGE("Error opening ctrl device");
-            goto error;
+        else if (at_fd < 0) {
+            MBMLOGE("Error opening at channel. Retrying...");
+            sleep(1);
+            goto retry;
         }
 
-        ret = gpsctrl_open(ctrl_fd, onATReaderClosed);
+        ret = gpsctrl_open(at_fd, onATReaderClosed);
         if (ret < 0) {
-            LOGE("Error opening ctrl device");
-            goto error;
+            MBMLOGE("Error opening gpsctrl device. Retrying...");
+            sleep(1);
+            goto retry;
         }
 
         context->gps_status.status = GPS_STATUS_ENGINE_ON;
@@ -760,172 +859,227 @@ static void main_loop(void *arg)
 
         ret = gpsctrl_init_supl(context->allow_uncert, context->enable_ni);
         if (ret < 0)
-            LOGE("Error initing supl");
+            MBMLOGE("Error initing SUPL");
 
         ret = gpsctrl_init_pgps();
         if (ret < 0)
-            LOGE("Error initing pgps");
-
-        /* temporarily removed because of issues with MbmService */
-        /*
-        LOGD("Requesting status from MbmService");
-        service_handler_send_message(CMD_SEND_ALL_INFO, "");
-        */
+            MBMLOGE("Error initing PGPS");
 
         pthread_mutex_lock(&context->mutex);
         if (context->gps_should_start || context->gps_started) {
-            LOGD("%s, restoring gps state to started", __FUNCTION__);
+            MBMLOGI("%s, restoring GPS state to started", __FUNCTION__);
             mbm_gps_start();
         }
         pthread_mutex_unlock(&context->mutex);
 
         nmea_fd = gpsctrl_get_nmea_fd();
 
-        epoll_register(epoll_fd, control_fd);
+        epoll_register(epoll_fd, cmd_fd);
         epoll_register(epoll_fd, nmea_fd);
 
-        while (!device_lost) {
-            struct epoll_event event;
+        while (!nmea_channel_lost) {
+            struct epoll_event event[2];
             int nevents;
-
-            nevents = epoll_wait(epoll_fd, &event, 1, -1);
+            nevents = epoll_wait(epoll_fd, event, 2, -1);
             if (nevents < 0 && errno != EINTR) {
-                LOGE("epoll_wait() unexpected error: %s", strerror(errno));
+                MBMLOGE("epoll_wait() unexpected error for fd %d: %s. Retrying...",
+                    epoll_fd, strerror(errno));
+                if (context->cleanup_requested)
+                    goto exit;
+                sleep(1);
                 continue;
             }
-
-            if ((event.events & (EPOLLERR | EPOLLHUP)) != 0) {
-                LOGE("EPOLLERR or EPOLLHUP after epoll_wait()!");
-                if (event.data.fd == nmea_fd) {
-                    LOGD("Device lost. Will try to recover.");
-                    break;
-                }
-                goto error;
-            }
-
-            if ((event.events & EPOLLIN) != 0) {
-                int fd = event.data.fd;
-
-                if (fd == control_fd) {
-
-                    do {
-                        ret = read(fd, &cmd, 1);
+            for (i=0; i<nevents; i++) {
+                if (((event[i].events & (EPOLLERR | EPOLLHUP)) != 0)) {
+                    MBMLOGE("EPOLLERR or EPOLLHUP after epoll_wait(%x)!", event[i].events);
+                    if (event[i].data.fd == nmea_fd) {
+                        MBMLOGW("NMEA channel lost. Will try to recover.");
+                        nmea_channel_lost = 1;
                     }
-                    while (ret < 0 && errno == EINTR);
-
-                    switch (cmd) {
-                        LOGD("%s cmd %d", __FUNCTION__, (int) cmd);
-                    case CMD_STATUS_CB:
-                        context->status_callback(&context->gps_status);
-                        break;
-                    case CMD_AGPS_STATUS_CB:
-                        context->agps_callbacks.status_cb(&context->agps_status);
-                        break;
-                    case CMD_NI_CB:
-                        LOGD("%s: CMD_NI_CB", __FUNCTION__);
-                        context->ni_callback(&context->notification);
-                        LOGD("%s: CMD_NI_CB sent", __FUNCTION__);
-                        break;
-                    case CMD_DEV_LOST:
-                        LOGD("%s: CMD_DEV_LOST, will try to recover.", __FUNCTION__);
-                        device_lost = 1;
-                        break;
-                    case CMD_QUIT:
-                        goto exit;
-                        break;
-                    default:
-                        break;
-                    }
-                } else if (fd == nmea_fd) {
-                    nmea_read(nmea_fd, nmea);
-                    nmea_received(nmea);
-                } else {
-                    LOGE("epoll_wait() returned unkown fd %d ?", fd);
                 }
+
+                if ((event[i].events & EPOLLIN) != 0) {
+                    int fd = event[i].data.fd;
+
+                    if (fd == cmd_fd) {
+                        do {
+                            ret = read(fd, &cmd, 1);
+                        }
+                        while (ret < 0 && errno == EINTR);
+
+                        MBMLOGD("%s, command %d", __FUNCTION__, (int) cmd);
+
+                        switch (cmd) {
+                        case CMD_STATUS_CB:
+                            context->status_callback(&context->gps_status);
+                            break;
+                        case CMD_AGPS_STATUS_CB:
+                            context->agps_callbacks.status_cb
+                                                (&context->agps_status);
+                            break;
+                        case CMD_NI_CB:
+                            MBMLOGV("%s: CMD_NI_CB", __FUNCTION__);
+                            context->ni_callback(&context->notification);
+                            MBMLOGV("%s: CMD_NI_CB sent", __FUNCTION__);
+                            break;
+                        case CMD_AT_LOST:
+                            MBMLOGW("%s: CMD_AT_LOST, will try to recover.",
+                                                        __FUNCTION__);
+                            at_reader_close();
+                            gpsctrl_set_device_is_ready(0);
+                            at_channel_lost = 1;
+                            MBMLOGW("AT channel lost. Will try to recover");
+                            break;
+                        case CMD_QUIT:
+                            goto exit;
+                            break;
+                        default:
+                            break;
+                        }
+                    } else if (fd == nmea_fd) {
+                        nmea_read(nmea_fd, nmea);
+                        nmea_received(nmea);
+                    } else
+                        MBMLOGE("epoll_wait() returned unkown fd %d ?", fd);
+                } else
+                    MBMLOGE("epoll_wait() returned unkown event %x", event[i].events);
             }
         }
 
         gpsctrl_set_device_is_ready(0);
-        gpsctrl_cleanup();
-        epoll_deregister(epoll_fd, control_fd);
+        epoll_deregister(epoll_fd, cmd_fd);
         epoll_deregister(epoll_fd, nmea_fd);
 
-        context->gps_status.status = GPS_STATUS_ENGINE_OFF;
-        add_pending_command(CMD_STATUS_CB);
+retry:
+        gpsctrl_cleanup();
+
+        if (context->gps_status.status != GPS_STATUS_ENGINE_OFF) {
+            context->gps_status.status = GPS_STATUS_ENGINE_OFF;
+            context->status_callback(&context->gps_status);
+        }
+
+        /* Make sure devices is removed before trying to reopen
+           otherwise we might end up in a race condition when
+           devices is being removed from filesystem */
+        i = TIMEOUT_DEVICE_REMOVED;
+        do {
+            at_dev = (0 == stat(ctrlcontext->at_dev, &sb));
+            nmea_dev = (0 == stat(ctrlcontext->nmea_dev, &sb));
+            if (at_dev || nmea_dev) {
+                MBMLOGD("Waiting for %s%s%s to be removed (%d)...",
+                    at_dev ? ctrlcontext->at_dev : "",
+                    at_dev && nmea_dev ? " and ": "",
+                    nmea_dev ? ctrlcontext->nmea_dev : "", i);
+                sleep(1);
+                i--;
+            }
+        } while ((at_dev || nmea_dev) && i);
     }
 
-  error:
-    LOGE("main loop terminated unexpectedly!");
-  exit:
+exit:
+    gpsctrl_set_device_is_ready(0);
+    gpsctrl_cleanup();
+
+    if (context->gps_status.status != GPS_STATUS_ENGINE_OFF) {
+        context->gps_status.status = GPS_STATUS_ENGINE_OFF;
+        context->status_callback(&context->gps_status);
+    }
+
     pthread_mutex_lock(&context->cleanup_mutex);
-    epoll_deregister(epoll_fd, control_fd);
-    epoll_deregister(epoll_fd, nmea_fd);
-    LOGD("Main loop quitting");
+
+    if (epoll_fd >= 0) {
+        epoll_deregister(epoll_fd, cmd_fd);
+        epoll_deregister(epoll_fd, nmea_fd);
+        close(epoll_fd);
+    }
+
     pthread_cond_signal(&context->cleanup_cond);
     pthread_mutex_unlock(&context->cleanup_mutex);
+
+    MBMLOGI("%s, terminated", __FUNCTION__);
+
+    EXIT;
 }
 
-static void get_properties(void)
+static void get_properties(char *nmea_dev, char *at_dev)
 {
-    char prop[PROPERTY_VALUE_MAX];
-    char nmea_dev[PROPERTY_VALUE_MAX];
-    char ctrl_dev[PROPERTY_VALUE_MAX];
-    int len;
     GpsContext *context = get_gps_context();
+    char prop[PROPERTY_VALUE_MAX];
+    int len;
 
-    LOGD("%s: enter", __FUNCTION__);
+    len = property_get("mbm.gps.config.loglevel", prop, "");
+    if (strstr(prop, "ERROR")) {
+        context->loglevel = ANDROID_LOG_ERROR;
+        MBMLOGI("Setting Loglevel to ERROR");
+    } else if (strstr(prop, "SILENT")) {
+        context->loglevel = ANDROID_LOG_SILENT;
+        MBMLOGI("Setting Loglevel to ERROR");
+    } else if (strstr(prop, "WARN")) {
+        context->loglevel = ANDROID_LOG_WARN;
+        MBMLOGI("Setting Loglevel to WARN");
+    } else if (strstr(prop, "INFO")) {
+        context->loglevel = ANDROID_LOG_INFO;
+        MBMLOGI("Setting Loglevel to INFO");
+    } else if (strstr(prop, "DEBUG")) {
+        context->loglevel = ANDROID_LOG_DEBUG;
+        MBMLOGI("Setting Loglevel to DEBUG");
+    } else if (strstr(prop, "VERBOSE")) {
+        context->loglevel = ANDROID_LOG_VERBOSE;
+        MBMLOGI("Setting Loglevel to VERBOSE");
+    } else {
+        context->loglevel = ANDROID_LOG_INFO;
+        MBMLOGI("Setting Loglevel to INFO");
+    }
 
     len = property_get("mbm.gps.config.gps_pref_mode", prop, "");
     if (strstr(prop, PROP_SUPL)) {
-        LOGD("Setting preferred agps mode to SUPL");
+        MBMLOGI("Setting preferred AGPS mode to SUPL");
         context->pref_mode = MODE_SUPL;
     } else if (strstr(prop, PROP_PGPS)) {
-        LOGD("Setting preferred agps mode to PGPS");
+        MBMLOGI("Setting preferred AGPS mode to PGPS");
         context->pref_mode = MODE_PGPS;
     } else if (strstr(prop, PROP_STANDALONE)) {
-        LOGD("Setting preferred agps mode to STANDALONE");
+        MBMLOGI("Setting preferred AGPS mode to STANDALONE");
         context->pref_mode = MODE_STAND_ALONE;
     } else {
-        LOGD("Setting preferred agps mode to PGPS (prop %s)",
+        MBMLOGI("Setting preferred AGPS mode to PGPS (prop %s)",
              prop);
         context->pref_mode = MODE_PGPS;
     }
 
     len = property_get("mbm.gps.config.supl.enable_ni", prop, "no");
     if (strstr(prop, "yes")) {
-        LOGD("Enabling network initiated requests");
+        MBMLOGI("Enabling network initiated requests");
         context->enable_ni = 1;
     } else {
-        LOGD("Disabling network initiated requests");
+        MBMLOGI("Disabling network initiated requests");
         context->enable_ni = 0;
     }
 
     len = property_get("mbm.gps.config.supl.uncert", prop, "no");
     if (strstr(prop, "yes")) {
-        LOGD("Allowing unknown certificates");
+        MBMLOGI("Allowing unknown certificates");
         context->allow_uncert = 1;
     } else {
-        LOGD("Not allowing unknown certificates");
+        MBMLOGI("Not allowing unknown certificates");
         context->allow_uncert = 0;
     }
 
-    len = property_get("mbm.gps.config.gps_ctrl", ctrl_dev, "");
+    len = property_get("mbm.gps.config.gps_ctrl", at_dev, "");
     if (len)
-        LOGD("Using gps ctrl device: %s", ctrl_dev);
+        MBMLOGI("Using gps ctrl device: %s", at_dev);
     else {
-        LOGD("No gps ctrl device set, using the default instead.");
-        snprintf(ctrl_dev, PROPERTY_VALUE_MAX, "%s", DEFAULT_CTRL_PORT);
+        MBMLOGI("No gps ctrl device set, using the default instead.");
+        snprintf(at_dev, PROPERTY_VALUE_MAX, "%s", DEFAULT_CTRL_PORT);
     }
 
     len = property_get("mbm.gps.config.gps_nmea", nmea_dev, "");
     if (len)
-        LOGD("Using gps nmea device: %s", nmea_dev);
+        MBMLOGI("Using gps nmea device: %s", nmea_dev);
     else {
-        LOGD("No gps nmea device set, using the default instead.");
+        MBMLOGI("No gps nmea device set, using the default instead.");
         snprintf(nmea_dev, PROPERTY_VALUE_MAX, "%s", DEFAULT_NMEA_PORT);
     }
-
-    gpsctrl_set_devices(ctrl_dev, nmea_dev);
 }
 
 static int mbm_gps_init(GpsCallbacks * callbacks)
@@ -933,8 +1087,10 @@ static int mbm_gps_init(GpsCallbacks * callbacks)
     int ret;
     GpsContext *context = get_gps_context();
     pthread_mutexattr_t mutex_attr;
+    char nmea_dev[PROPERTY_VALUE_MAX];
+    char at_dev[PROPERTY_VALUE_MAX];
 
-    LOGD("MBM-GPS version: %s", MBM_GPS_VERSION);
+    ALOGI("MBM-GPS version: %s", MBM_GPS_VERSION);
 
     context->gps_started = 0;
     context->gps_initiated = 0;
@@ -942,8 +1098,10 @@ static int mbm_gps_init(GpsCallbacks * callbacks)
     context->cleanup_requested = 0;
     context->gps_should_start = 0;
 
+    get_properties(nmea_dev, at_dev);
+
     if (callbacks == NULL) {
-        LOGE("%s, callbacks null", __FUNCTION__);
+        MBMLOGE("%s, callbacks null", __FUNCTION__);
         return -1;
     }
 
@@ -953,17 +1111,17 @@ static int mbm_gps_init(GpsCallbacks * callbacks)
                                        GPS_CAPABILITY_MSA |
                                        GPS_CAPABILITY_SINGLE_SHOT);
     } else {
-        LOGE("%s capabilities_cb is null", __FUNCTION__);
+        MBMLOGE("%s capabilities_cb is null", __FUNCTION__);
     }
 
     context->agps_status.size = sizeof(AGpsStatus);
 
-    nmea_reader_init(context->reader);
+    nmea_reader_init(context->reader, context->loglevel);
 
-    context->control_fd[0] = -1;
-    context->control_fd[1] = -1;
-    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, context->control_fd) < 0) {
-        LOGE("could not create thread control socket pair: %s",
+    context->cmd_fd[0] = -1;
+    context->cmd_fd[1] = -1;
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, context->cmd_fd) < 0) {
+        MBMLOGE("could not create thread control socket pair: %s",
              strerror(errno));
         return -1;
     }
@@ -980,19 +1138,19 @@ static int mbm_gps_init(GpsCallbacks * callbacks)
     pthread_cond_init(&context->cleanup_cond, NULL);
 
     /* initialize mbm service handler */
-    LOGD("%s pre init service handler", __FUNCTION__);
-    if (service_handler_init() < 0)
-        LOGD("%s, error initializing service handler", __FUNCTION__);
-    LOGD("%s post init service handler", __FUNCTION__);
+    if (service_handler_init(context->loglevel) < 0)
+        MBMLOGE("%s, error initializing service handler", __FUNCTION__);
 
-    ret = gpsctrl_init();
+    ret = gpsctrl_init(context->loglevel);
     if (ret < 0)
-        LOGE("Error initing gpsctrl lib");
+        MBMLOGE("Error initing gpsctrl lib");
 
-    get_properties();
+    gpsctrl_set_devices(at_dev, nmea_dev);
     gpsctrl_set_supl_ni_callback(mbm_gps_ni_request);
+    gpsctrl_set_supl_fail_callback(supl_fail);
+
     if (ret < 0) {
-        LOGE("Error setting devices");
+        MBMLOGE("Error setting devices");
         return -1;
     }
 
@@ -1004,7 +1162,7 @@ static int mbm_gps_init(GpsCallbacks * callbacks)
 
     context->gps_initiated = 1;
 
-    LOGD("%s: exit", __FUNCTION__);
+    MBMLOGV("%s: exit", __FUNCTION__);
     return 0;
 }
 
@@ -1012,11 +1170,11 @@ static void mbm_gps_cleanup(void)
 {
     GpsContext *context = get_gps_context();
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     context->gps_initiated = 0;
 
-    LOGD("%s, waiting for main thread to exit", __FUNCTION__);
+    MBMLOGD("%s, waiting for main thread to exit", __FUNCTION__);
     pthread_mutex_lock(&context->cleanup_mutex);
 
     add_pending_command(CMD_QUIT);
@@ -1024,10 +1182,10 @@ static void mbm_gps_cleanup(void)
 
     pthread_cond_wait(&context->cleanup_cond, &context->cleanup_mutex);
 
-    LOGD("%s, stopping service handler", __FUNCTION__);
+    MBMLOGD("%s, stopping service handler", __FUNCTION__);
     service_handler_stop();
 
-    LOGD("%s, cleanup gps ctrl", __FUNCTION__);
+    MBMLOGD("%s, cleanup gps ctrl", __FUNCTION__);
     gpsctrl_cleanup();
 
     pthread_mutex_unlock(&context->cleanup_mutex);
@@ -1036,7 +1194,7 @@ static void mbm_gps_cleanup(void)
     pthread_mutex_destroy(&context->cleanup_mutex);
     pthread_cond_destroy(&context->cleanup_cond);
 
-    LOGD("%s: exit", __FUNCTION__);
+    EXIT;
 }
 
 
@@ -1045,21 +1203,23 @@ static int mbm_gps_start(void)
     int err;
     GpsContext *context = get_gps_context();
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     pthread_mutex_lock(&context->mutex);
 
     if (!gpsctrl_get_device_is_ready()) {
-        LOGD("%s, device is not ready. Deferring start of gps.", __FUNCTION__);
+        MBMLOGW("%s, device is not ready. Deferring start of gps.", __FUNCTION__);
         context->gps_should_start = 1;
         pthread_mutex_unlock(&context->mutex);
+        EXIT;
         return 0;
     }
 
     err = gpsctrl_start();
     if (err < 0) {
-        LOGE("Error starting gps");
+        MBMLOGE("Error starting gps");
         pthread_mutex_unlock(&context->mutex);
+        EXIT;
         return -1;
     }
 
@@ -1068,8 +1228,8 @@ static int mbm_gps_start(void)
     context->gps_status.status = GPS_STATUS_SESSION_BEGIN;
     add_pending_command(CMD_STATUS_CB);
 
-    LOGD("%s: exit 0", __FUNCTION__);
     pthread_mutex_unlock(&context->mutex);
+    EXIT;
     return 0;
 }
 
@@ -1077,16 +1237,17 @@ static int mbm_gps_stop(void)
 {
     int err;
     GpsContext *context = get_gps_context();
-    LOGD("%s: enter", __FUNCTION__);
+
+    ENTER;
 
     pthread_mutex_lock(&context->mutex);
 
     if (!gpsctrl_get_device_is_ready()) {
-        LOGD("%s, device not ready.", __FUNCTION__);
+        MBMLOGW("%s, device not ready.", __FUNCTION__);
     } else {
         err = gpsctrl_stop();
         if (err < 0)
-            LOGE("Error stopping gps");
+            MBMLOGE("Error stopping gps");
     }
 
     context->gps_started = 0;
@@ -1096,13 +1257,14 @@ static int mbm_gps_stop(void)
     add_pending_command(CMD_STATUS_CB);
 
     if (context->clear_flag > CLEAR_AIDING_DATA_NONE) {
-        LOGD("%s: Executing deferred operation of deleting aiding data", __FUNCTION__);
+        MBMLOGW("%s: Executing deferred operation of deleting aiding data", __FUNCTION__);
         gpsctrl_delete_aiding_data(context->clear_flag);
         context->clear_flag = CLEAR_AIDING_DATA_NONE;
     }
 
-    LOGD("%s: exit 0", __FUNCTION__);
     pthread_mutex_unlock(&context->mutex);
+
+    EXIT;
     return 0;
 }
 
@@ -1112,21 +1274,22 @@ static int
 mbm_gps_inject_time(GpsUtcTime time, int64_t timeReference,
                     int uncertainty)
 {
+    GpsContext *context = get_gps_context();
     char buff[100];
     int tow, week;
     time_t s_time;
     (void) timeReference;
     (void) uncertainty;
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     s_time = time / 1000;
     utc_to_gps(s_time, &tow, &week);
     memset(buff, 0, 100);
     snprintf(buff, 98, "AT*E2GPSTIME=%d,%d\r", tow, week);
-    LOGD("%s: %s", __FUNCTION__, buff);
+    MBMLOGD("%s: %s", __FUNCTION__, buff);
 
-    LOGD("%s: exit 0", __FUNCTION__);
+    EXIT;
     return 0;
 }
 
@@ -1134,13 +1297,20 @@ mbm_gps_inject_time(GpsUtcTime time, int64_t timeReference,
  *  (typically cell ID).
  *  latitude and longitude are measured in degrees
  *  expected accuracy is measured in meters
+ *  Not implemented just debug
  */
 static int
 mbm_gps_inject_location(double latitude, double longitude, float accuracy)
 {
+    GpsContext *context = get_gps_context();
 
-    LOGD("%s: lat = %f , lon = %f , acc = %f", __FUNCTION__, latitude,
+    ENTER;
+
+    MBMLOGD("%s: lat = %f , lon = %f , acc = %f", __FUNCTION__, latitude,
          longitude, accuracy);
+
+    EXIT;
+
     return 0;
 }
 
@@ -1149,7 +1319,7 @@ static void mbm_gps_delete_aiding_data(GpsAidingData flags)
     GpsContext *context = get_gps_context();
     int clear_flag = CLEAR_AIDING_DATA_NONE;
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     /* Support exist for EPHEMERIS and ALMANAC only
      * where only EPHEMERIS can be cleared by it self.
@@ -1160,16 +1330,16 @@ static void mbm_gps_delete_aiding_data(GpsAidingData flags)
     else if (GPS_DELETE_EPHEMERIS == (GPS_DELETE_EPHEMERIS & flags))
         clear_flag = CLEAR_AIDING_DATA_EPH_ONLY;
     else
-        LOGI("Parameters not supported for deleting");
+        MBMLOGW("Parameters not supported for deleting");
 
     if (!context->gps_started)
         gpsctrl_delete_aiding_data(clear_flag);
     else {
-        LOGD("%s, Deferring operation of deleting aiding data until gps is stopped", __FUNCTION__);
+        MBMLOGW("%s, Deferring operation of deleting aiding data until gps is stopped", __FUNCTION__);
         context->clear_flag = clear_flag;
     }
 
-    LOGD("%s: exit 0", __FUNCTION__);
+    EXIT;
 }
 
 static char *get_mode_name(int mode)
@@ -1197,8 +1367,10 @@ mbm_gps_set_position_mode(GpsPositionMode mode,
     int new_mode = MODE_STAND_ALONE;
     int interval;
     (void) preferred_accuracy;
+    (void) preferred_time;
+    (void) *get_mode_name;
 
-    LOGD("%s:enter  %s min_interval = %d recurrence=%d pref=%d",
+    MBMLOGV("%s:enter  %s min_interval = %d recurrence=%d pref_time=%d",
          __FUNCTION__, get_mode_name(mode), min_interval, recurrence,
          preferred_time);
 
@@ -1231,35 +1403,37 @@ mbm_gps_set_position_mode(GpsPositionMode mode,
 
     gpsctrl_set_position_mode(new_mode, interval);
 
-    LOGD("%s: exit 0", __FUNCTION__);
+    EXIT;
     return 0;
 }
 
 static const void *mbm_gps_get_extension(const char *name)
 {
-    LOGD("%s: enter name=%s", __FUNCTION__, name);
+    GpsContext *context = get_gps_context();
+
+    MBMLOGV("%s: enter name=%s", __FUNCTION__, name);
 
     if (name == NULL)
         return NULL;
 
-    LOGD("%s, querying %s", __FUNCTION__, name);
+    MBMLOGD("%s, querying %s", __FUNCTION__, name);
 
     if (!strncmp(name, AGPS_INTERFACE, 10)) {
-        LOGD("%s: exit &mbmAGpsInterface", __FUNCTION__);
+        MBMLOGD("%s: exit &mbmAGpsInterface", __FUNCTION__);
         return &mbmAGpsInterface;
     }
 
     if (!strncmp(name, AGPS_RIL_INTERFACE, 10)) {
-        LOGD("%s: exit &mbmAGpsRilInterface", __FUNCTION__);
+        MBMLOGD("%s: exit &mbmAGpsRilInterface", __FUNCTION__);
         return &mbmAGpsRilInterface;
     }
 
     if (!strncmp(name, GPS_NI_INTERFACE, 10)) {
-        LOGD("%s: exit &mbmGpsNiInterface", __FUNCTION__);
+        MBMLOGD("%s: exit &mbmGpsNiInterface", __FUNCTION__);
         return &mbmGpsNiInterface;
     }
 
-    LOGD("%s: exit NULL", __FUNCTION__);
+    EXIT;
     return NULL;
 }
 
@@ -1310,15 +1484,19 @@ static const GpsInterface mbmGpsInterface = {
 
 const GpsInterface *gps_get_hardware_interface(void)
 {
-    LOGD("gps_get_hardware_interface");
+    GpsContext *context = get_gps_context();
+
+    MBMLOGD("gps_get_hardware_interface");
     return &mbmGpsInterface;
 }
 
 /* This is for Gingerbread */
 const GpsInterface *mbm_get_gps_interface(struct gps_device_t *dev)
 {
+    GpsContext *context = get_gps_context();
     (void) dev;
-    LOGD("mbm_gps_get_hardware_interface");
+
+    MBMLOGD("mbm_gps_get_hardware_interface");
     return &mbmGpsInterface;
 }
 
@@ -1326,19 +1504,20 @@ static int
 mbm_open_gps(const struct hw_module_t *module,
              char const *name, struct hw_device_t **device)
 {
+    GpsContext *context = get_gps_context();
     struct gps_device_t *dev;
     (void) name;
 
-    LOGD("%s: enter", __FUNCTION__);
+    ENTER;
 
     if (module == NULL) {
-        LOGE("%s: module null", __FUNCTION__);
+        MBMLOGE("%s: module null", __FUNCTION__);
         return -1;
     }
 
     dev = malloc(sizeof(struct gps_device_t));
     if (!dev) {
-        LOGE("%s: malloc fail", __FUNCTION__);
+        MBMLOGE("%s: malloc fail", __FUNCTION__);
         return -1;
     }
     memset(dev, 0, sizeof(*dev));
@@ -1350,7 +1529,7 @@ mbm_open_gps(const struct hw_module_t *module,
 
     *device = (struct hw_device_t *) dev;
 
-    LOGD("%s: exit", __FUNCTION__);
+    EXIT;
     return 0;
 }
 
@@ -1358,7 +1537,7 @@ static struct hw_module_methods_t mbm_gps_module_methods = {
     .open = mbm_open_gps
 };
 
-const struct hw_module_t HAL_MODULE_INFO_SYM = {
+struct hw_module_t HAL_MODULE_INFO_SYM = {
     .tag = HARDWARE_MODULE_TAG,
     .version_major = 1,
     .version_minor = 0,

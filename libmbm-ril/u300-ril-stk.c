@@ -308,7 +308,7 @@ void getCachedStkMenu(void)
     struct stkmenu *cmenu = NULL;
     char *line;
     char *p;
-    char *resp;
+    char *resp = NULL;
     ATLine *cursor;
     ATResponse *p_response = NULL;
 
@@ -436,6 +436,7 @@ void getCachedStkMenu(void)
 cleanup:
     at_response_free(p_response);
     free(cmenu);
+    free(resp);
 }
 
 static size_t tlv_stream_get(const char **stream, const char *end)

@@ -5,7 +5,7 @@ ifeq ($(strip $(BOARD_USES_MBM_GPS)),true)
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := gps.$(TARGET_PRODUCT)
+LOCAL_MODULE := gps.$(CM_BUILD)
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SRC_FILES := \
@@ -37,7 +37,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libdl \
 	libc
 
-LOCAL_CFLAGS := -Wall -Wextra
+LOCAL_CFLAGS := -Wall -Wextra -std=c99
 #LOCAL_CFLAGS += -DLOG_NDEBUG=0
 #LOCAL_CFLAGS += -DSINGLE_SHOT
 

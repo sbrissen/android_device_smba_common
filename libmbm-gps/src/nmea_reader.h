@@ -45,7 +45,15 @@ typedef struct {
     int update;
 } NmeaReader;
 
-void nmea_reader_init(NmeaReader * r);
+typedef struct {
+    int isInitialized;
+    int loglevel;
+} NmeaContext;
+
+/* get the current context */
+NmeaContext* get_nmea_context(void);
+
+void nmea_reader_init(NmeaReader * r, int loglevel);
 
 void nmea_reader_set_callbacks(NmeaReader * r, GpsCallbacks * cbs);
 

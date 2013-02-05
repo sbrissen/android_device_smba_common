@@ -55,10 +55,13 @@ typedef void* (* gpsctrl_queued_event) (void *data);
 /* callback for supl ni requests */
 typedef void (* gpsctrl_supl_ni_callback)(GpsCtrlSuplNiRequest *supl_ni_request);
 
+/* Callback for supl failures. Could be used to start a fallback mode instead */
+typedef void (* gpsctrl_supl_fail_callback)(void);
+
 typedef struct {
-    char *ctrl_dev;
+    char *at_dev;
     char *nmea_dev;
-    int ctrl_fd;
+    int at_fd;
     int nmea_fd;
     int pref_mode;
     int fallback;
@@ -70,6 +73,8 @@ typedef struct {
     int data_enabled;
     int is_roaming;
     int is_ready;
+    int loglevel;
+    gpsctrl_supl_fail_callback supl_fail_callback;
     gpsctrl_supl_ni_callback supl_ni_callback;
     GpsCtrlSuplConfig supl_config;
 }GpsCtrlContext;
@@ -86,7 +91,7 @@ typedef struct {
 #define SUPL_CID 25
 
 /* get the current context */
-GpsCtrlContext* get_context(void);
+GpsCtrlContext* get_gpsctrl_context(void);
 
 /* enqueue an event */
 void enqueue_event (gpsctrl_queued_event queued_event, void *data);
@@ -94,21 +99,21 @@ void enqueue_event (gpsctrl_queued_event queued_event, void *data);
 /* set the devices to be used */
 int gpsctrl_set_devices (char *ctrl_dev, char* nmea_dev);
 
-/* get the ctrl device name */
-char *gpsctrl_get_ctrl_device(void);
+/* get the at device name */
+char *gpsctrl_get_at_device(void);
 
 /* initialize context */
-int gpsctrl_init(void);
+int gpsctrl_init(int loglevel);
 
 /* open at and nmea channels */
-int gpsctrl_open (int ctrl_fd, void (*onClose)(void));
+int gpsctrl_open (int at_fd, void (*onClose)(void));
 
 /* set position mode; stand alone, supl, etc and the desired fix interval*/
 void gpsctrl_set_position_mode (int mode, int recurrence);
-	
+
 /* get the nmea fd */
 int gpsctrl_get_nmea_fd(void);
-	
+
 /* init supl related configuration, apn, supl server etc */
 int gpsctrl_init_supl (int allow_uncert, int enabled_ni);
 
@@ -120,22 +125,28 @@ int gpsctrl_set_supl_server (char *server);
 
 /* set the supl apn */
 int gpsctrl_set_apn_info (char *apn, char *user, char *password, char* authtype);
-		
+
+/*  set callback for supl failures */
+void gpsctrl_set_supl_fail_callback (gpsctrl_supl_fail_callback supl_fail_callback);
+
 /*  set callback for supl ni requests */
 void gpsctrl_set_supl_ni_callback (gpsctrl_supl_ni_callback supl_ni_callback);
-		
+
 /* reply on supl network initiated requests */
 int gpsctrl_supl_ni_reply (GpsCtrlSuplNiRequest *supl_ni_request, int allow);
 
 /* delete aiding data */
 int gpsctrl_delete_aiding_data (int clear_flag); /* must wait 10 seconds after gps has stopped */
-	
+
 /* start the gps */
 int gpsctrl_start(void);
-	
+
+/* start the gps in fallback mode */
+int gpsctrl_start_fallback(void);
+
 /* stop the gps */
 int gpsctrl_stop(void);
-	
+
 /* close at and nmea ports and cleanup */
 int gpsctrl_cleanup(void);
 

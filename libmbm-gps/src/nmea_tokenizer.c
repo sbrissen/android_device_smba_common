@@ -19,8 +19,12 @@
  *         Torgny Johansson <torgny.johansson@ericsson.com>
  */
 
-#include "log.h"
 #include "nmea_tokenizer.h"
+#include "nmea_reader.h"
+
+#define LOG_NDEBUG 0
+#define LOG_TAG "libgps-nmea"
+#include "log.h"
 
 /* Just check this file */
 #ifdef __GNUC__
@@ -37,6 +41,7 @@
 
 int nmea_tokenizer_init(NmeaTokenizer * t, const char *p, const char *end)
 {
+    NmeaContext *context = get_nmea_context();
     int count = 0;
     /* char *q; */
 
@@ -81,6 +86,7 @@ int nmea_tokenizer_init(NmeaTokenizer * t, const char *p, const char *end)
 
 Token nmea_tokenizer_get(NmeaTokenizer * t, int index)
 {
+    NmeaContext *context = get_nmea_context();
     Token tok;
     static const char *dummy = "";
 

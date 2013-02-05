@@ -26,6 +26,6 @@
 int nmea_open(char *dev);
 int nmea_activate_port (int nmea_fd);
 int nmea_read (int fd, char *nmea);
-void nmea_close (int fd);
+void nmea_close (void);
 
 #endif /* NMEACHANNEL_H */

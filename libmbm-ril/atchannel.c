@@ -200,7 +200,7 @@ static struct atcontext *getAtContext(void)
                  "no defaultAtContext set!! This IS a bug! "
                  "A crash is probably nearby!", __func__);
         }
-    }
+    } 
 
     return ac;
 }
@@ -493,7 +493,7 @@ static const char *readline(void)
             p_read = ac->ATBuffer + len;
             ac->ATBufferCur = ac->ATBuffer;
         }
-        /* Otherwise, (p_eol !- NULL) there is a complete line
+        /* Otherwise, (p_eol !- NULL) there is a complete line 
            that will be returned from the while () loop below. */
     }
 
@@ -590,7 +590,7 @@ static const char *readline(void)
     /* The extra EOS added after read takes care of the case when there is no
      * valid data after p_eol.
      */
-    ac->ATBufferCur = p_eol + 1;     /* This will always be <= p_read,
+    ac->ATBufferCur = p_eol + 1;     /* This will always be <= p_read,    
                                         and there will be a \0 at *p_read. */
 
     ALOGI("AT(%d)< %s", ac->fd, ret);
@@ -670,6 +670,7 @@ static int writeline (const char *s)
 {
     size_t cur = 0;
     size_t len = strlen(s);
+    char *cmd;
     ssize_t written;
 
     struct atcontext *ac = getAtContext();
@@ -682,28 +683,28 @@ static int writeline (const char *s)
 
     AT_DUMP( ">> ", s, strlen(s) );
 
-    /* The main string. */
+    if (!(asprintf(&cmd, "%s\r", s))) {
+        ALOGE("%s() Failed to allocate string", __func__);
+        return AT_ERROR_GENERIC;
+    }
+
+    len++;
+
+    /* The whole string. */
     while (cur < len) {
         do {
-            written = write (ac->fd, s + cur, len - cur);
+            written = write (ac->fd, cmd + cur, len - cur);
         } while (written < 0 && errno == EINTR);
 
         if (written < 0) {
+            free(cmd);
             return AT_ERROR_GENERIC;
         }
 
         cur += written;
     }
 
-    /* The \r  */
-
-    do {
-        written = write (ac->fd, "\r" , 1);
-    } while ((written < 0 && errno == EINTR) || (written == 0));
-
-    if (written < 0) {
-        return AT_ERROR_GENERIC;
-    }
+    free(cmd);
 
     return 0;
 }
@@ -712,6 +713,7 @@ static int writeCtrlZ (const char *s)
 {
     size_t cur = 0;
     size_t len = strlen(s);
+    char *cmd;
     ssize_t written;
 
     struct atcontext *ac = getAtContext();
@@ -723,25 +725,28 @@ static int writeCtrlZ (const char *s)
 
     AT_DUMP( ">* ", s, strlen(s) );
 
-    /* The main string. */
+    if (!(asprintf(&cmd, "%s\032", s))) {
+        ALOGE("%s() Failed to allocate string", __func__);
+        return AT_ERROR_GENERIC;
+    }
+
+    len++;
+
+    /* The whole string. */
     while (cur < len) {
         do {
-            written = write (ac->fd, s + cur, len - cur);
+            written = write (ac->fd, cmd + cur, len - cur);
         } while (written < 0 && errno == EINTR);
 
-        if (written < 0)
+        if (written < 0) {
+            free(cmd);
             return AT_ERROR_GENERIC;
+        }
 
         cur += written;
     }
 
-    /* the ^Z  */
-    do {
-        written = write (ac->fd, "\032" , 1);
-    } while ((written < 0 && errno == EINTR) || (written == 0));
-
-    if (written < 0)
-        return AT_ERROR_GENERIC;
+    free(cmd);
 
     return 0;
 }
@@ -833,7 +838,7 @@ int at_open(int fd, ATUnsolHandler h)
         ALOGE("%s() InitializeAtContext failed!", __func__);
         goto error;
     }
-
+    
     ac = getAtContext();
 
     ac->fd = fd;
@@ -870,8 +875,11 @@ void at_close(void)
     if (ac->fd >= 0) {
         if (close(ac->fd) != 0)
             ALOGE("%s() FAILED to close fd %d!", __func__, ac->fd);
+        ac->fd = -1;
+    } else {
+        ALOGW("%s() Already closed!", __func__);
+        return;
     }
-    ac->fd = -1;
 
     pthread_mutex_lock(&ac->commandmutex);
 
@@ -1238,13 +1246,15 @@ int at_send_command_multiline (const char *command,
 
 /**
  * Set the default timeout. Let it be reasonably high, some commands
- * take their time. Default is 10 minutes.
+ * take their time.
  */
 void at_set_timeout_msec(int timeout)
 {
     struct atcontext *ac = getAtContext();
 
     ac->timeoutMsec = timeout;
+
+    ALOGI("Setting AT command timeout to %d ms", timeout);
 }
 
 /** This callback is invoked on the command thread. */

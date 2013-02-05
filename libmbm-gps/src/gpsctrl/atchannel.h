@@ -84,8 +84,8 @@ typedef struct {
  */
 typedef void (*ATUnsolHandler)(const char *s, const char *sms_pdu);
 
-int at_open(int fd, ATUnsolHandler h);
-void at_close(void);
+int at_reader_open(int fd, ATUnsolHandler h, int loglevel);
+void at_reader_close(void);
 
 /*
  * Set default timeout for at commands. Let it be reasonable high
