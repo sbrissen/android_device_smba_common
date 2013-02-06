@@ -84,7 +84,7 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/ramdisk/init.rc:root/init.rc \
     device/malata/smba_common/prebuilt/ramdisk/init.harmony.usb.rc:root/init.harmony.usb.rc \
-    device/malata/smba_common/prebuilt/ueventd.harmony.rc:root/ueventd.harmony.rc \
+    device/malata/smba_common/prebuilt/ramdisk/ueventd.harmony.rc:root/ueventd.harmony.rc \
     device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
     device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt
 
