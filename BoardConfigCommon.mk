@@ -17,8 +17,6 @@
 # This variable is set first, so it can be overridden
 # by BoardConfigVendor.mk
 USE_CAMERA_STUB := false
-BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/malata/smba_common/bluetooth
-TARGET_PREBUILT_KERNEL := device/malata/smba_common/prebuilt/kernel
 
 TARGET_SPECIFIC_HEADER_PATH := device/malata/smba_common/include
 
