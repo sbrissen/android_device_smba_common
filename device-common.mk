@@ -14,11 +14,6 @@
 # limitations under the License.
 #
 
-ifeq ($(TARGET_SCREEN_WIDTH) $(TARGET_SCREEN_HEIGHT),$(space))
-    PRODUCT_COPY_FILES += \
-        vendor/cm/prebuilt/common/bootanimation/600.zip:system/media/bootanimation.zip
-endif
-
 # Harmony Configs
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/ramdisk/init.rc:root/init.rc \
@@ -34,15 +29,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	ro.zram.default=18 \
     wifi.supplicant_scan_interval=180
 
-# uses mdpi artwork where available
-	PRODUCT_AAPT_CONFIG := normal mdpi
-	PRODUCT_AAPT_PREF_CONFIG := mdpi
-	PRODUCT_LOCALES += mdpi
-
-LOCAL_ACP_UNAVAILABLE := false
-
 # HAL
-
 PRODUCT_PACKAGES += \
     audio.a2dp.default \
     audio.primary.harmony \
