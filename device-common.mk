@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+TARGET_BOOTANIMATION_NAME := horizontal-1024x600
+
 # Harmony Configs
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/ramdisk/init.rc:root/init.rc \
