@@ -1,4 +1,4 @@
-ifdef ($(BOARD_USES_NMEA_GPS),true)
+ifeq ($(BOARD_USES_NMEA_GPS),true)
   LOCAL_PATH := $(call my-dir)/nmea
 
   include $(CLEAR_VARS)
