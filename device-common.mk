@@ -74,8 +74,7 @@ PRODUCT_COPY_FILES += \
 # Bluetooth
 PRODUCT_COPY_FILES += \
 	system/bluetooth/data/main.nonsmartphone.conf:system/etc/bluetooth/main.conf \
-	device/malata/smba_common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd \
-	device/malata/smba_common/bluetooth/bt_vendor.conf:system/etc/bluetooth/bt_vendor.conf
+	device/malata/smba_common/prebuilt/bcm4329.hcd:system/etc/firmware/bcm4329.hcd
 	
 # Touchscreen
 PRODUCT_COPY_FILES += \
