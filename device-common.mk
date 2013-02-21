@@ -35,18 +35,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 	persist.sys.usb.config=mtp
 
-#Audio
+# HAL
 PRODUCT_PACKAGES += \
     audio.a2dp.default \
     audio.primary.harmony \
     audio.usb.default \
     libaudioutils \
-    tinymix \
-    tinyplay \
-    tinyrec
-
-# HAL
-PRODUCT_PACKAGES += \
     gps.tegra \
     lights.tegra \
     camera.tegra \
@@ -56,12 +50,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/media_profiles.xml:system/etc/media_profiles.xml \
     device/malata/smba_common/prebuilt/media_codecs.xml:system/etc/media_codecs.xml \
-    device/malata/smba_common/libaudio/audio_policy.conf:system/etc/audio_policy.conf
-
-# Mixer paths
-PRODUCT_COPY_FILES += \
-    device/malata/smba_common/libaudio/mixer_paths.xml:system/etc/mixer_paths.xml
-
+    device/malata/smba_common/prebuilt/audio_policy.conf:system/etc/audio_policy.conf
+	
 # These are the hardware-specific feature permissions this was commented out
 PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/tablet_core_hardware.xml:system/etc/permissions/tablet_core_hardware.xml \
