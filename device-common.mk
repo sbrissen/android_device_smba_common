@@ -45,6 +45,10 @@ PRODUCT_PACKAGES += \
     lights.tegra \
     camera.tegra \
     sensors.tegra
+
+# HW Composer proxy
+PRODUCT_PACKAGES += \
+    hwcomposer.tegra
 	
 # Media
 PRODUCT_COPY_FILES += \
