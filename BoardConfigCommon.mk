@@ -51,8 +51,8 @@ BOARD_USES_ALSA_AUDIO := false
 #bluetooth
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
-BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR ?= device/malata/smba_common/bluetooth
 BOARD_BLUEDROID_VENDOR_CONF := device/malata/smba_common/bluetooth/libbt_vndcfg.txt
+BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR ?= device/malata/smba_common/bluetooth
 
 #graphics
 BOARD_EGL_CFG := device/malata/smba_common/prebuilt/egl.cfg
