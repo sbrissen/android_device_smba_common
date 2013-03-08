@@ -57,7 +57,7 @@ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR ?= device/malata/smba_common/bluetoo
 #graphics
 BOARD_EGL_CFG := device/malata/smba_common/prebuilt/egl.cfg
 BOARD_USES_OVERLAY := true
-USE_OPENGL_RENDERER := true
+USE_OPENGL_RENDERER := false
 
 # Wifi related defines
 BOARD_WPA_SUPPLICANT_DRIVER := NL80211
