@@ -112,6 +112,10 @@ ifneq ($(TARGET_BUILD_VARIANT),user)
 		system/extras/bugmailer/send_bug:system/bin/send_bug
 endif
 
+# prefer mdpi drawables where available
+PRODUCT_AAPT_CONFIG := normal mdpi hdpi xhdpi
+PRODUCT_AAPT_PREF_CONFIG := mdpi
+
 WIFI_BAND := 802_11_ABG
 $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
 
