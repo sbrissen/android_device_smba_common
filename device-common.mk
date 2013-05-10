@@ -14,7 +14,9 @@
 # limitations under the License.
 #
 
-TARGET_BOOTANIMATION_NAME := horizontal-1024x600
+#TARGET_BOOTANIMATION_NAME := horizontal-1024x600
+TARGET_SCREEN_WIDTH := 1024
+TARGET_SCREEN_HEIGHT := 600
 
 # Harmony Configs
 PRODUCT_COPY_FILES += \
@@ -22,18 +24,19 @@ PRODUCT_COPY_FILES += \
     device/malata/smba_common/prebuilt/ramdisk/init.harmony.usb.rc:root/init.harmony.usb.rc \
     device/malata/smba_common/prebuilt/ramdisk/ueventd.harmony.rc:root/ueventd.harmony.rc \
     device/malata/smba_common/prebuilt/bcmdhd.cal:system/etc/wifi/bcmdhd.cal \
-	device/malata/smba_common/prebuilt/compcache:system/bin/compcache \
+    device/malata/smba_common/prebuilt/compcache:system/bin/compcache \
     device/malata/smba_common/prebuilt/nvram.txt:system/etc/wifi/nvram.txt
 
 PRODUCT_PROPERTY_OVERRIDES += \
     BUILD_UTC_DATE=0 \
     wifi.interface=wlan0 \
-	ro.zram.default=18 \
-    wifi.supplicant_scan_interval=180
+    ro.zram.default=18 \
+    wifi.supplicant_scan_interval=180 \
+    debug.hwui.render_dirty_regions=false
 	
 # Set default USB interface
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
-	persist.sys.usb.config=mtp
+    persist.sys.usb.config=mtp,adb
 
 # HAL
 PRODUCT_PACKAGES += \
@@ -47,8 +50,8 @@ PRODUCT_PACKAGES += \
     sensors.tegra
 
 # HW Composer proxy
-PRODUCT_PACKAGES += \
-    hwcomposer.tegra
+#PRODUCT_PACKAGES += \
+#    hwcomposer.tegra
 	
 # Media
 PRODUCT_COPY_FILES += \

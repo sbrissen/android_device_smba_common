@@ -41,7 +41,7 @@ SMALLER_FONT_FOOTPRINT := true
 TARGET_NO_RADIOIMAGE := true
 TARGET_BOARD_PLATFORM := tegra
 TARGET_BOOTLOADER_BOARD_NAME := harmony
-BOARD_EGL_NEEDS_LEGACY_FB := false
+BOARD_EGL_NEEDS_LEGACY_FB := true
 
 #audio
 BOARD_USES_GENERIC_AUDIO := true
@@ -58,6 +58,9 @@ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR ?= device/malata/smba_common/bluetoo
 BOARD_EGL_CFG := device/malata/smba_common/prebuilt/egl.cfg
 BOARD_USES_OVERLAY := true
 USE_OPENGL_RENDERER := true
+
+# Preload bootanimation in to memory
+TARGET_BOOTANIMATION_PRELOAD := true
 
 # Wifi related defines
 BOARD_WPA_SUPPLICANT_DRIVER := NL80211
